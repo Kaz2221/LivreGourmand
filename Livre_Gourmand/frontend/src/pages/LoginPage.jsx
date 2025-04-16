@@ -1,137 +1,71 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaLock, FaEnvelope } from 'react-icons/fa';
-import { authService } from '../services/authService.js';
+import { FaEnvelope, FaLock } from 'react-icons/fa';
 
 const LoginPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-  
-  const handleSubmit = async (e) => {
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      const data = await authService.login(formData.email, formData.password);
-      
-      // Sauvegarder les infos dans localStorage
-      localStorage.setItem('userToken', data.token);
-      localStorage.setItem('userInfo', JSON.stringify(data.user));
-      
-      // Rediriger vers la page d'accueil
-      navigate('/');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Une erreur est survenue lors de la connexion');
-    } finally {
-      setLoading(false);
-    }
+    // Logique de connexion
+    console.log('Connexion', { email, password });
+    // Exemple de redirection après connexion
+    navigate('/');
   };
-  
+
   return (
-    <div className="min-h-screen bg-[#F5E6D3] py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-[#4A4A5C]">Sign In</h2>
-          <p className="text-gray-600 mt-2">Welcome back to Livres Gourmand</p>
-        </div>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-3xl font-bold text-center text-primary mb-6">Connexion</h2>
         
-        {error && (
-          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-        
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-gray-700 font-medium mb-2">Email Address</label>
+            <label htmlFor="email" className="block mb-2 text-gray-700">Email</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaEnvelope className="text-gray-400" />
-              </div>
+              <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                id="email"
-                name="email"
                 type="email"
-                autoComplete="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Votre email"
                 required
-                value={formData.email}
-                onChange={handleChange}
-                className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[#4A4A5C] focus:border-[#4A4A5C] transition"
-                placeholder="Your email"
               />
             </div>
           </div>
           
           <div>
-            <label htmlFor="password" className="block text-gray-700 font-medium mb-2">Password</label>
+            <label htmlFor="password" className="block mb-2 text-gray-700">Mot de passe</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaLock className="text-gray-400" />
-              </div>
+              <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                id="password"
-                name="password"
                 type="password"
-                autoComplete="current-password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Votre mot de passe"
                 required
-                value={formData.password}
-                onChange={handleChange}
-                className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[#4A4A5C] focus:border-[#4A4A5C] transition"
-                placeholder="Your password"
               />
             </div>
           </div>
           
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-[#4A4A5C] focus:ring-[#4A4A5C] border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-            
-            <div className="text-sm">
-              <a href="#" className="text-[#B39B84] hover:text-[#a38a76]">
-                Forgot your password?
-              </a>
-            </div>
-          </div>
-          
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-[#4A4A5C] hover:bg-[#3a3a49] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4A4A5C] transition"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Se connecter
+          </button>
         </form>
         
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-[#B39B84] hover:text-[#a38a76] font-medium">
-              Create an account
+        <div className="text-center mt-6">
+          <p>
+            Pas de compte ? {' '}
+            <Link to="/register" className="text-secondary hover:underline">
+              Créez-en un
             </Link>
           </p>
         </div>
