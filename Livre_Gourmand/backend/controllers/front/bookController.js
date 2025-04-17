@@ -1,5 +1,5 @@
 // backend/controllers/front/bookController.js
-const { Livre, Avis } = require('../../models');
+const { Livre, Avis, Utilisateur } = require('../../models');
 const { Op } = require('sequelize');
 
 // @desc    Récupérer tous les livres
@@ -122,7 +122,17 @@ const getBookById = async (req, res) => {
     const livre = await Livre.findByPk(req.params.id, {
       include: [{
         model: Avis,
-        include: ['id_client', 'note', 'commentaire', 'date_avis', 'valide']
+        attributes: ['note','commentaire','date_avis','valide'],
+        include: [{
+          model: Utilisateur,
+          as: 'utilisateur',              // correspond à l’aspect belongsTo(...)
+          attributes: [
+            'id_utilisateur',
+            'username',
+            'nom',
+            'email'
+          ]
+        }]
       }]
     });
 
@@ -130,24 +140,22 @@ const getBookById = async (req, res) => {
       return res.status(404).json({ message: 'Livre non trouvé' });
     }
 
-    // Calculer la note moyenne
-    let noteMoyenne = 0;
-    if (livre.Avis && livre.Avis.length > 0) {
-      noteMoyenne = livre.Avis.reduce((sum, avis) => sum + avis.note, 0) / livre.Avis.length;
-    }
+    const avisList = livre.Avis || [];
+    const noteMoyenne = avisList.length
+      ? (avisList.reduce((s, a) => s + a.note, 0) / avisList.length).toFixed(1)
+      : 0;
 
-    const livreData = {
+    res.json({
       ...livre.get({ plain: true }),
-      note_moyenne: parseFloat(noteMoyenne.toFixed(1)),
-      nombre_avis: livre.Avis ? livre.Avis.length : 0
-    };
-
-    res.json(livreData);
+      note_moyenne: parseFloat(noteMoyenne),
+      nombre_avis:  avisList.length
+    });
   } catch (error) {
-    console.error('Erreur lors de la récupération du livre:', error);
+    console.error('Erreur lors de la récupération du livre :', error);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 };
+
 
 // @desc    Ajouter un avis sur un livre
 // @route   POST /api/front/books/:id/reviews
