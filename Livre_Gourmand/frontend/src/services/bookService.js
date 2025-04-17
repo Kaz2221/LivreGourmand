@@ -23,47 +23,23 @@ export const bookService = {
     }
   },
   
-  // Obtenir les livres mis en avant
-  getFeaturedBooks: async () => {
+  
+  getRecentBooks: async (limit = 4) => {
     try {
-      // Pour le développement, utilisons des données statiques
-      // En production, vous remplaceriez ceci par un vrai appel API
-      return [
-        {
-          id: 1,
-          title: "Traditional French Kitchen",
-          author: "Marie Dupont",
-          price: 29.99,
-          image_url: "/books/french-kitchen.jpg"
-        },
-        {
-          id: 2,
-          title: "Pasta Classics",
-          author: "Giovanni Rossi",
-          price: 24.95,
-          image_url: "/books/pasta-classics.jpg"
-        },
-        {
-          id: 3,
-          title: "Sweet Pastry Mastery",
-          author: "Claire Martin",
-          price: 34.99,
-          image_url: "/books/pastry-mastery.jpg"
-        },
-        {
-          id: 4,
-          title: "Farm-to-Table Practices",
-          author: "Thomas Green",
-          price: 39.95,
-          image_url: "/books/farm-to-table.jpg"
+      // La requête trie par date d'ajout décroissante
+      const response = await api.get('/api/front/books', { 
+        params: {
+          sort: 'date_desc', 
+          limit: limit
         }
-      ];
+      });
+      return response.data.livres;
     } catch (error) {
-      console.error('Error fetching featured books:', error);
+      console.error('Error fetching recent books:', error);
       throw error;
     }
   },
-  
+
   // Rechercher des livres
   searchBooks: async (searchTerm) => {
     try {

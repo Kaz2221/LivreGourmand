@@ -22,6 +22,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Route de test publique
+app.get('/api/test-public', (req, res) => {
+  res.json({ message: 'Cette route est publique' });
+});
+
 // Servir les fichiers statiques
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
@@ -54,27 +59,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Configuration du port et démarrage du serveur
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
-});
-
-app.get('/api/test-db', async (req, res) => {
-  try {
-    const [results] = await databaseSingleton.getSequelize().query("SELECT NOW() as now");
-    res.json({
-      message: 'Connexion à la base de données réussie',
-      timestamp: results[0].now,
-      database: process.env.DB_NAME
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Erreur de connexion à la base de données',
-      error: error.message
-    });
-  }
-});
+// Fonction de démarrage du serveur
 const startServer = async () => {
   try {
     // Tester la connexion
@@ -86,7 +71,7 @@ const startServer = async () => {
       await databaseSingleton.syncDatabase(false);
       
       // Démarrer le serveur
-      const PORT = process.env.PORT || 5000;
+      const PORT = process.env.PORT || 3001;
       app.listen(PORT, () => {
         console.log(`Serveur démarré sur le port ${PORT}`);
       });
@@ -98,4 +83,5 @@ const startServer = async () => {
   }
 };
 
+// Démarrage du serveur
 startServer();

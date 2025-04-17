@@ -1,24 +1,14 @@
-// backend/routes/back/bookRoutes.js
+// backend/routes/front/bookRoutes.js
 const express = require('express');
 const router = express.Router();
-const { 
-  getBooks, 
-  createBook, 
-  updateBook, 
-  deleteBook, 
-  manageReview 
-} = require('../../controllers/back/bookController');
-const { protect, authorize } = require('../../middlewares/authMiddleware');
-const upload = require('../../middlewares/uploadMiddleware');
+const { getBooks, getBookById, createBookReview } = require('../../controllers/front/bookController');
+const { protect } = require('../../middlewares/authMiddleware');
 
-// Toutes les routes sont protégées et accessibles seulement aux administrateurs et gestionnaires
-router.use(protect);
-router.use(authorize('administrateur', 'gestionnaire', 'editeur'));
-
+// Routes publiques (pas besoin d'authentification)
 router.get('/', getBooks);
-router.post('/', upload.single('image'), createBook);
-router.put('/:id', upload.single('image'), updateBook);
-router.delete('/:id', deleteBook);
-router.put('/reviews/:id', manageReview);
+router.get('/:id', getBookById);
+
+// Routes protégées (nécessitant une authentification)
+router.post('/:id/reviews', protect, createBookReview);
 
 module.exports = router;
