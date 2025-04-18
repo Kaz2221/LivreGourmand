@@ -1,7 +1,7 @@
 // frontend/src/components/common/Header.jsx
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaShoppingCart, FaUser, FaSearch, FaSignOutAlt, FaBook, FaList } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaSignOutAlt, FaBook, FaList, FaHeart, FaEnvelope } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import { CartContext } from '../../context/CartContext';
 
@@ -21,7 +21,7 @@ const Header = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
       setSearchQuery('');
     }
   };
@@ -32,13 +32,15 @@ const Header = () => {
         <div className="logo">
           <Link to="/" className="text-2xl font-bold">Livres Gourmands</Link>
         </div>
-        
+
         <nav className="hidden md:flex space-x-6">
           <Link to="/" className="hover:text-secondary">Accueil</Link>
           <Link to="/shop" className="hover:text-secondary">Boutique</Link>
           <Link to="/categories" className="hover:text-secondary">Catégories</Link>
+          <Link to="/wishlist" className="hover:text-secondary flex items-center"><FaHeart className="mr-1" /> Wishlist</Link>
+          <Link to="/contact" className="hover:text-secondary flex items-center"><FaEnvelope className="mr-1" /> Contact</Link>
         </nav>
-        
+
         <div className="flex items-center space-x-4">
           {/* Barre de recherche */}
           <form onSubmit={handleSearch} className="relative">
@@ -53,7 +55,7 @@ const Header = () => {
               <FaSearch />
             </button>
           </form>
-          
+
           {/* Icône utilisateur avec menu déroulant */}
           <div className="relative">
             <button 
@@ -65,8 +67,7 @@ const Header = () => {
                 <span className="ml-2 hidden sm:block">{user.username || user.nom}</span>
               )}
             </button>
-            
-            {/* Menu déroulant */}
+
             {showDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                 {isAuthenticated ? (
@@ -123,7 +124,7 @@ const Header = () => {
               </div>
             )}
           </div>
-          
+
           {/* Icône panier avec badge */}
           <Link to="/cart" className="hover:text-secondary relative">
             <FaShoppingCart className="text-xl" />
@@ -135,13 +136,15 @@ const Header = () => {
           </Link>
         </div>
       </div>
-      
+
       {/* Navigation mobile */}
       <div className="md:hidden border-t border-white/10">
-        <div className="flex justify-between px-4 py-2">
+        <div className="flex flex-wrap justify-around px-4 py-2">
           <Link to="/" className="text-white/80 py-1">Accueil</Link>
           <Link to="/shop" className="text-white/80 py-1">Boutique</Link>
           <Link to="/categories" className="text-white/80 py-1">Catégories</Link>
+          <Link to="/wishlist" className="text-white/80 py-1">Wishlist</Link>
+          <Link to="/contact" className="text-white/80 py-1">Contact</Link>
         </div>
       </div>
     </header>
