@@ -16,7 +16,21 @@ const HomePage = () => {
       try {
         setLoading(true);
         const data = await bookService.getRecentBooks(4);
-        setRecentBooks(data);
+        
+        // Calculer la note moyenne pour chaque livre
+        const booksWithRatings = data.map(book => {
+          if (book.avis && book.avis.length > 0) {
+            const sum = book.avis.reduce((total, avis) => total + avis.note, 0);
+            book.averageRating = (sum / book.avis.length).toFixed(1);
+            book.reviewCount = book.avis.length;
+          } else {
+            book.averageRating = 0;
+            book.reviewCount = 0;
+          }
+          return book;
+        });
+        
+        setRecentBooks(booksWithRatings);
         setLoading(false);
       } catch (err) {
         setError('Impossible de charger les livres récents');
@@ -27,6 +41,16 @@ const HomePage = () => {
 
     fetchRecentBooks();
   }, []);
+
+  // Définition des catégories avec leurs identifiants correspondants utilisés dans la BDD
+  const categories = [
+    { name: 'Française', icon: '🥐', value: 'FRANCAISE' },
+    { name: 'Italienne', icon: '🍝', value: 'ITALIENNE' },
+    { name: 'Asiatique', icon: '🍜', value: 'ASIATIQUE' },
+    { name: 'Pâtisserie', icon: '🍰', value: 'PATISSERIE' },
+    { name: 'Végétarienne', icon: '🥗', value: 'VEGETARIENNE' },
+    { name: 'Vins', icon: '🍷', value: 'VINS' }
+  ];
 
   return (
     <div className="relative">
@@ -91,7 +115,7 @@ const HomePage = () => {
                   <div className="h-64 bg-gray-200 overflow-hidden">
                     {book.image_url ? (
                       <img
-                        src={book.image_url}
+                        src={book.image_url.startsWith('http') ? book.image_url : `http://localhost:3001${book.image_url}`}
                         alt={book.titre}
                         className="w-full h-full object-cover"
                       />
@@ -112,7 +136,7 @@ const HomePage = () => {
                           <FaStar
                             key={star}
                             className={`${
-                              star <= Math.round(book.note_moyenne || 0)
+                              star <= Math.round(book.averageRating)
                                 ? 'text-yellow-400'
                                 : 'text-gray-300'
                             }`}
@@ -120,7 +144,7 @@ const HomePage = () => {
                         ))}
                       </div>
                       <span className="text-sm text-gray-500">
-                        ({book.nombre_avis || 0} avis)
+                        ({book.reviewCount} avis)
                       </span>
                     </div>
 
@@ -162,22 +186,19 @@ const HomePage = () => {
             Nos Catégories
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {[ 
-              { name: 'Française', icon: '🥐' },
-              { name: 'Italienne', icon: '🍝' },
-              { name: 'Asiatique', icon: '🍜' },
-              { name: 'Pâtisserie', icon: '🍰' },
-              { name: 'Végétarienne', icon: '🥗' },
-              { name: 'Vins', icon: '🍷' }
-            ].map((category, i) => (
+            {categories.map((category, i) => (
               <motion.div
                 key={i}
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: 'spring', stiffness: 200 }}
-                className="bg-background rounded-lg p-4 text-center hover:bg-secondary/10 transition-colors"
               >
-                <span className="text-4xl mb-2 block">{category.icon}</span>
-                <span className="text-primary font-medium">{category.name}</span>
+                <Link 
+                  to={`/shop?categorie=${category.value}`} 
+                  className="block bg-background rounded-lg p-4 text-center hover:bg-secondary/10 transition-colors h-full"
+                >
+                  <span className="text-4xl mb-2 block">{category.icon}</span>
+                  <span className="text-primary font-medium">{category.name}</span>
+                </Link>
               </motion.div>
             ))}
           </div>

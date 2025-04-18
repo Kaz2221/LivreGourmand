@@ -1,14 +1,23 @@
 // frontend/src/pages/ShopPage.jsx
 import React, { useEffect, useState } from 'react';
 import { bookService } from '../services/bookService';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
+// Fonction utilitaire pour obtenir les paramètres de recherche de l'URL
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
 const ShopPage = () => {
+  const query = useQuery();
+  const initialCategory = query.get('categorie') || '';
+  const initialSearch = query.get('search') || '';
+
   const [books, setBooks] = useState([]);
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
+  const [search, setSearch] = useState(initialSearch);
+  const [category, setCategory] = useState(initialCategory);
   const [price, setPrice] = useState(100);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +25,12 @@ const ShopPage = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const res = await bookService.getBooks();
+        // Utiliser les paramètres pour la recherche initiale
+        const params = {};
+        if (initialCategory) params.categorie = initialCategory;
+        if (initialSearch) params.search = initialSearch;
+
+        const res = await bookService.getBooks(params);
         setBooks(res.livres);
         setFilteredBooks(res.livres);
       } catch (err) {
@@ -26,8 +40,9 @@ const ShopPage = () => {
       }
     };
     fetchBooks();
-  }, []);
+  }, [initialCategory, initialSearch]);
 
+  // Effet pour filtrer les livres quand les critères changent
   useEffect(() => {
     const term = search.toLowerCase();
     const results = books.filter(
@@ -39,6 +54,18 @@ const ShopPage = () => {
     );
     setFilteredBooks(results);
   }, [search, category, price, books]);
+
+  // Définition des catégories pour le sélecteur
+  const categories = [
+    { name: 'Toutes', value: '' },
+    { name: 'Française', value: 'FRANCAISE' },
+    { name: 'Asiatique', value: 'ASIATIQUE' },
+    { name: 'Italienne', value: 'ITALIENNE' },
+    { name: 'Végétarienne', value: 'VEGETARIENNE' },
+    { name: 'Pâtisserie', value: 'PATISSERIE' },
+    { name: 'Vins', value: 'VINS' },
+    { name: 'Autre', value: 'AUTRE' }
+  ];
 
   return (
     <motion.div
@@ -77,14 +104,11 @@ const ShopPage = () => {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="">Toutes</option>
-                <option value="FRANCAISE">Française</option>
-                <option value="ASIATIQUE">Asiatique</option>
-                <option value="ITALIENNE">Italienne</option>
-                <option value="VEGETARIENNE">Végétarienne</option>
-                <option value="PATISSERIE">Pâtisserie</option>
-                <option value="VINS">Vins</option>
-                <option value="AUTRE">Autre</option>
+                {categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -106,7 +130,7 @@ const ShopPage = () => {
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
             <div className="col-span-full text-center text-primary text-lg animate-pulse">Chargement des livres...</div>
-          ) : (
+          ) : filteredBooks.length > 0 ? (
             filteredBooks.map((book) => (
               <motion.div
                 key={book.id_livre}
@@ -135,6 +159,10 @@ const ShopPage = () => {
                 </Link>
               </motion.div>
             ))
+          ) : (
+            <div className="col-span-full text-center text-gray-500">
+              Aucun livre ne correspond à vos critères de recherche.
+            </div>
           )}
         </div>
       </div>

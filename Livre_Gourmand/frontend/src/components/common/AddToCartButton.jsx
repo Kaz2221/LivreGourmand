@@ -1,5 +1,5 @@
 // src/components/common/AddToCartButton.jsx
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react"; // Ajout de useEffect
 import { useNavigate } from "react-router-dom";
 import { FaShoppingCart, FaCheck } from "react-icons/fa";
 import { cartService } from "../../services/cartService.js";
@@ -8,7 +8,7 @@ import { CartContext } from '../../context/CartContext';
 
 const AddToCartButton = ({
   livre,
-  quantite = 1,
+  quantite = 1, // La quantité passée par le parent
   className = "",
   showQuantity = false,
 }) => {
@@ -17,8 +17,13 @@ const AddToCartButton = ({
   const [error, setError] = useState("");
   const [qty, setQty] = useState(quantite);
   const { isAuthenticated } = useContext(AuthContext);
-  const { refreshCart } = useContext(CartContext); //;
+  const { refreshCart, triggerCartShake } = useContext(CartContext);
   const navigate = useNavigate();
+
+  // Mettre à jour l'état local quand la prop change
+  useEffect(() => {
+    setQty(quantite);
+  }, [quantite]);
 
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
@@ -36,11 +41,11 @@ const AddToCartButton = ({
     try {
       setError("");
       setLoading(true);
-      await cartService.addToCart(livre.id_livre, qty);
+      await cartService.addToCart(livre.id_livre, qty); // Utilise qty qui reflète maintenant quantite
+      triggerCartShake();
       await refreshCart();
       setSuccess(true);
 
-      // Réinitialiser le message de succès après 3 secondes
       setTimeout(() => {
         setSuccess(false);
       }, 3000);

@@ -122,16 +122,11 @@ const getBookById = async (req, res) => {
     const livre = await Livre.findByPk(req.params.id, {
       include: [{
         model: Avis,
-        attributes: ['note','commentaire','date_avis','valide'],
+        attributes: ['id_avis', 'note', 'commentaire', 'date_avis', 'valide'],
         include: [{
           model: Utilisateur,
-          as: 'utilisateur',              // correspond à l’aspect belongsTo(...)
-          attributes: [
-            'id_utilisateur',
-            'username',
-            'nom',
-            'email'
-          ]
+          as: 'utilisateur',
+          attributes: ['id_utilisateur', 'username', 'nom']
         }]
       }]
     });
@@ -140,18 +135,9 @@ const getBookById = async (req, res) => {
       return res.status(404).json({ message: 'Livre non trouvé' });
     }
 
-    const avisList = livre.Avis || [];
-    const noteMoyenne = avisList.length
-      ? (avisList.reduce((s, a) => s + a.note, 0) / avisList.length).toFixed(1)
-      : 0;
-
-    res.json({
-      ...livre.get({ plain: true }),
-      note_moyenne: parseFloat(noteMoyenne),
-      nombre_avis:  avisList.length
-    });
+    res.json(livre);
   } catch (error) {
-    console.error('Erreur lors de la récupération du livre :', error);
+    console.error('Erreur lors de la récupération du livre:', error);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 };
@@ -190,7 +176,7 @@ const createBookReview = async (req, res) => {
       id_client: userId,
       note,
       commentaire,
-      valide: false // Par défaut, les avis doivent être validés
+      valide: true // Automatiquement validé
     });
 
     res.status(201).json({

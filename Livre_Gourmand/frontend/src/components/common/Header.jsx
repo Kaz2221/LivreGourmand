@@ -4,10 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaShoppingCart, FaUser, FaSearch, FaSignOutAlt, FaBook, FaList, FaHeart, FaEnvelope } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import { CartContext } from '../../context/CartContext';
+import { motion } from 'framer-motion'; // Importer motion de framer-motion
 
 const Header = () => {
   const { user, logout, isAuthenticated } = useContext(AuthContext);
-  const { itemCount } = useContext(CartContext);
+  const { itemCount, cartShake } = useContext(CartContext); // Récupérer cartShake du contexte
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -125,14 +126,19 @@ const Header = () => {
             )}
           </div>
 
-          {/* Icône panier avec badge */}
+          {/* Icône panier avec badge et animation */}
           <Link to="/cart" className="hover:text-secondary relative">
-            <FaShoppingCart className="text-xl" />
-            {itemCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-secondary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {itemCount > 99 ? '99+' : itemCount}
-              </span>
-            )}
+            <motion.div
+              animate={cartShake ? { x: [0, -5, 5, -5, 5, 0] } : {}}
+              transition={{ duration: 0.6 }}
+            >
+              <FaShoppingCart className="text-xl" />
+              {itemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-secondary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {itemCount > 99 ? '99+' : itemCount}
+                </span>
+              )}
+            </motion.div>
           </Link>
         </div>
       </div>

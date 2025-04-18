@@ -23,7 +23,7 @@ export const bookService = {
     }
   },
   
-  
+  // Récupérer des livres récents
   getRecentBooks: async (limit = 4) => {
     try {
       // La requête trie par date d'ajout décroissante
@@ -58,6 +58,28 @@ export const bookService = {
       return response.data;
     } catch (error) {
       console.error('Error adding review:', error);
+      throw error;
+    }
+  },
+  
+  // Obtenir des livres par catégorie (pour les recommandations)
+  getBooksByCategory: async (category, limit = 4, excludeId = null) => {
+    try {
+      const params = {
+        categorie: category,
+        limit: limit
+      };
+      
+      const response = await api.get('/api/front/books', { params });
+      
+      // Si un ID à exclure est fourni, filtrer ce livre des résultats
+      if (excludeId) {
+        return response.data.livres.filter(book => book.id_livre !== excludeId);
+      }
+      
+      return response.data.livres;
+    } catch (error) {
+      console.error('Error fetching books by category:', error);
       throw error;
     }
   }

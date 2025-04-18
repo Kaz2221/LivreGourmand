@@ -8,9 +8,10 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(null);
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [cartShake, setCartShake] = useState(false); // Nouvel état pour l'animation de secousse
   const { isAuthenticated } = useContext(AuthContext);
 
-  // Calculer le nombre d’articles total dans le panier
+  // Calculer le nombre d'articles total dans le panier
   const calculateItemCount = (cartData) => {
     if (!cartData || !cartData.Livres) {
       setItemCount(0);
@@ -22,6 +23,12 @@ export const CartProvider = ({ children }) => {
     }, 0);
 
     setItemCount(count);
+  };
+
+  // Fonction pour déclencher l'animation de secousse
+  const triggerCartShake = () => {
+    setCartShake(true);
+    setTimeout(() => setCartShake(false), 600); // Réinitialiser après 600ms
   };
 
   // Charger le panier
@@ -58,6 +65,7 @@ export const CartProvider = ({ children }) => {
       const response = await cartService.addToCart(id_livre, quantite);
       setCart(response.panier);
       calculateItemCount(response.panier);
+      triggerCartShake(); // Déclencher l'animation de secousse
       return response;
     } catch (error) {
       console.error("Erreur lors de l'ajout au panier:", error);
@@ -90,7 +98,7 @@ export const CartProvider = ({ children }) => {
       calculateItemCount(response.panier);
       return response;
     } catch (error) {
-      console.error("Erreur lors de la suppression d’un article:", error);
+      console.error("Erreur lors de la suppression d'un article:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -114,6 +122,7 @@ export const CartProvider = ({ children }) => {
 
   const refreshCart = async () => {
     await fetchCart();
+    triggerCartShake(); // Déclencher l'animation après le rafraîchissement
   };
 
   return (
@@ -122,11 +131,13 @@ export const CartProvider = ({ children }) => {
         cart,
         itemCount,
         loading,
+        cartShake, // Exposer l'état de l'animation
         addToCart,
         updateCartItem,
         removeCartItem,
         clearCart,
-        refreshCart
+        refreshCart,
+        triggerCartShake // Exposer la fonction pour déclencher l'animation
       }}
     >
       {children}

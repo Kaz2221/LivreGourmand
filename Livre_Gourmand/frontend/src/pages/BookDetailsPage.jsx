@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FaStar, FaArrowLeft } from 'react-icons/fa';
 import { bookService } from '../services/bookService';
 import AddToCartButton from '../components/common/AddToCartButton';
 import WishlistButton from '../components/common/WishlistButton';
+import BookReviews from '../components/common/BookReviews';
+import { CartContext } from '../context/CartContext';
 import { motion } from 'framer-motion';
 
 const BookDetailsPage = () => {
@@ -14,22 +16,68 @@ const BookDetailsPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [wishlistId, setWishlistId] = useState(null);
   const [shake, setShake] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const { triggerCartShake } = useContext(CartContext);
+
+  const fetchBookDetails = async () => {
+    try {
+      setLoading(true);
+      const bookData = await bookService.getBookById(parseInt(id));
+      
+      // Calculer la note moyenne des avis
+      if (bookData.avis && bookData.avis.length > 0) {
+        // Utiliser la propriété 'avis' (minuscule) de l'objet livre
+        const sum = bookData.avis.reduce((total, avis) => total + avis.note, 0);
+        bookData.averageRating = (sum / bookData.avis.length).toFixed(1);
+        bookData.reviewCount = bookData.avis.length;
+      } else {
+        bookData.averageRating = 0;
+        bookData.reviewCount = 0;
+      }
+      
+      setBook(bookData);
+      setWishlistId(1);
+      
+      // Une fois que nous avons les détails du livre, cherchons des recommandations
+      if (bookData.categorie) {
+        setLoadingRecommendations(true);
+        try {
+          const similarBooks = await bookService.getBooksByCategory(
+            bookData.categorie, 
+            4,  // Limiter à 4 livres
+            parseInt(id) // Exclure le livre actuel
+          );
+          
+          // Calculer la note moyenne pour chaque livre recommandé
+          const booksWithRatings = similarBooks.map(book => {
+            if (book.avis && book.avis.length > 0) {
+              const sum = book.avis.reduce((total, avis) => total + avis.note, 0);
+              book.averageRating = (sum / book.avis.length).toFixed(1);
+              book.reviewCount = book.avis.length;
+            } else {
+              book.averageRating = 0;
+              book.reviewCount = 0;
+            }
+            return book;
+          });
+          
+          setRecommendations(booksWithRatings);
+        } catch (recError) {
+          console.error('Erreur lors du chargement des recommandations:', recError);
+        } finally {
+          setLoadingRecommendations(false);
+        }
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement des détails du livre:', err);
+      setError('Impossible de charger les détails du livre');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBookDetails = async () => {
-      try {
-        setLoading(true);
-        const bookData = await bookService.getBookById(parseInt(id));
-        setBook(bookData);
-        setWishlistId(1);
-      } catch (err) {
-        console.error('Erreur lors du chargement des détails du livre:', err);
-        setError('Impossible de charger les détails du livre');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (id) fetchBookDetails();
   }, [id]);
 
@@ -46,19 +94,26 @@ const BookDetailsPage = () => {
   const triggerShake = () => {
     setShake(true);
     setTimeout(() => setShake(false), 600);
+    // Déclencher également l'animation de secousse du panier dans le header
+    triggerCartShake();
+  };
+
+  // Gestionnaire pour rafraîchir les données du livre après un nouvel avis
+  const handleReviewAdded = () => {
+    fetchBookDetails();
   };
 
   if (loading) return <div className="text-center py-20">Chargement...</div>;
   if (error || !book) return <div className="text-center text-red-500">{error || 'Livre non trouvé'}</div>;
 
   return (
-    <motion.div
-      className="container mx-auto px-4 py-10"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="bg-white rounded-xl shadow-md p-6 md:p-10 flex flex-col md:flex-row gap-8">
+    <div className="container mx-auto px-4 py-10">
+      <motion.div
+        className="bg-white rounded-xl shadow-md p-6 md:p-10 flex flex-col md:flex-row gap-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <motion.div
           className="w-full md:w-1/3 relative"
           initial={{ opacity: 0, x: -30 }}
@@ -104,10 +159,13 @@ const BookDetailsPage = () => {
           <div className="flex items-center mb-2 text-sm text-gray-600">
             <div className="flex text-yellow-400 mr-2">
               {[1, 2, 3, 4, 5].map((star) => (
-                <FaStar key={star} className={`${star <= Math.round(book.note_moyenne || 0) ? 'text-yellow-400' : 'text-gray-300'}`} />
+                <FaStar 
+                  key={star} 
+                  className={`${star <= Math.round(book.averageRating) ? 'text-yellow-400' : 'text-gray-300'}`} 
+                />
               ))}
             </div>
-            <span>({book.nombre_avis || 0} avis)</span>
+            <span>({book.reviewCount} avis)</span>
           </div>
 
           <p className="text-xl text-secondary font-bold mb-4">{parseFloat(book.prix).toFixed(2)} €</p>
@@ -167,8 +225,71 @@ const BookDetailsPage = () => {
             <FaArrowLeft className="inline mr-1" /> Retour à la boutique
           </Link>
         </motion.div>
+      </motion.div>
+
+      {/* Section Avis */}
+      <BookReviews 
+        bookId={book.id_livre} 
+        reviews={book.avis || []} 
+        onReviewAdded={handleReviewAdded}
+      />
+
+      {/* Section de recommandations */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold text-primary mb-6">Vous pourriez aussi aimer</h2>
+        
+        {loadingRecommendations ? (
+          <div className="text-center">Chargement des recommandations...</div>
+        ) : recommendations.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {recommendations.map((recBook) => (
+              <motion.div
+                key={recBook.id_livre}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                whileHover={{ y: -5 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Link to={`/book/${recBook.id_livre}`} className="block">
+                  <div className="h-40 bg-gray-200 overflow-hidden">
+                    {recBook.image_url ? (
+                      <img
+                        src={recBook.image_url.startsWith('http') ? recBook.image_url : `http://localhost:3001${recBook.image_url}`}
+                        alt={recBook.titre}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/10 text-4xl">
+                        📚
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold text-primary truncate">{recBook.titre}</h3>
+                    <p className="text-sm text-gray-600 truncate">{recBook.auteur}</p>
+                    <div className="flex items-center mt-1 mb-2">
+                      <div className="flex text-yellow-400 text-xs mr-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <FaStar 
+                            key={star} 
+                            className={`${star <= Math.round(recBook.averageRating) ? 'text-yellow-400' : 'text-gray-300'}`} 
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-gray-500">({recBook.reviewCount})</span>
+                    </div>
+                    <p className="font-bold text-secondary">{parseFloat(recBook.prix).toFixed(2)} €</p>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center">Aucune recommandation disponible pour ce livre.</p>
+        )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 
