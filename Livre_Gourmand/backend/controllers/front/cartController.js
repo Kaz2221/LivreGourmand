@@ -1,4 +1,3 @@
-// backend/controllers/front/cartController.js
 const { Panier, ItemPanier, Livre } = require('../../models');
 
 // @desc    Récupérer le panier de l'utilisateur
@@ -7,30 +6,27 @@ const { Panier, ItemPanier, Livre } = require('../../models');
 const getCart = async (req, res) => {
   try {
     const clientId = req.user.id_client;
-
-    // Récupérer le panier ou le créer s'il n'existe pas
-    let panier = await Panier.findOne({
+    console.log("🔥 getCart a été appelé !");
+    const panier = await Panier.findOne({
       where: { id_client: clientId },
       include: [{
         model: Livre,
+        as: 'Livres',
         through: {
+          model: ItemPanier,
           attributes: ['quantite', 'prix_unitaire']
         }
       }]
     });
 
     if (!panier) {
-      panier = await Panier.create({
-        id_client: clientId,
-        prix_total: 0
-      });
-      panier.Livres = [];
+      return res.status(404).json({ message: "Panier introuvable" });
     }
 
     res.json(panier);
   } catch (error) {
     console.error('Erreur lors de la récupération du panier:', error);
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 };
 
@@ -48,9 +44,9 @@ const addItemToCart = async (req, res) => {
       return res.status(404).json({ message: 'Livre non trouvé' });
     }
 
-    // Vérifier le stock
+    // Vérifier le stock disponible
     if (livre.stock < quantite) {
-      return res.status(400).json({ message: 'Stock insuffisant' });
+      return res.status(400).json({ message: `Stock insuffisant. Il reste ${livre.stock} exemplaire(s).` });
     }
 
     // Récupérer ou créer le panier
@@ -71,10 +67,20 @@ const addItemToCart = async (req, res) => {
     });
 
     if (itemExistant) {
-      // Mettre à jour la quantité
+      const nouvelleQuantite = itemExistant.quantite + quantite;
+
+      // Vérifier que la somme n'excède pas le stock
+      if (livre.stock < quantite) {
+        return res.status(400).json({ message: `Stock insuffisant. Il reste ${livre.stock} exemplaire(s).` });
+      }
+
       await itemExistant.update({
-        quantite: itemExistant.quantite + quantite
+        quantite: nouvelleQuantite
       });
+
+      // Mettre à jour le stock
+      livre.stock -= quantite;
+      await livre.save();
     } else {
       // Ajouter le nouvel article
       await ItemPanier.create({
@@ -83,12 +89,17 @@ const addItemToCart = async (req, res) => {
         quantite,
         prix_unitaire: livre.prix
       });
+
+      // Mettre à jour le stock
+      livre.stock -= quantite;
+      await livre.save();
     }
 
     // Récupérer le panier mis à jour
     const panierMisAJour = await Panier.findByPk(panier.id_panier, {
       include: [{
         model: Livre,
+        as: 'Livres',
         through: {
           attributes: ['quantite', 'prix_unitaire']
         }
@@ -114,15 +125,10 @@ const updateCartItem = async (req, res) => {
     const livreId = req.params.id;
     const clientId = req.user.id_client;
 
-    // Vérifier si le livre existe
+    // Récupérer le livre
     const livre = await Livre.findByPk(livreId);
     if (!livre) {
       return res.status(404).json({ message: 'Livre non trouvé' });
-    }
-
-    // Vérifier le stock
-    if (livre.stock < quantite) {
-      return res.status(400).json({ message: 'Stock insuffisant' });
     }
 
     // Récupérer le panier
@@ -131,7 +137,7 @@ const updateCartItem = async (req, res) => {
       return res.status(404).json({ message: 'Panier non trouvé' });
     }
 
-    // Vérifier si l'article est dans le panier
+    // Récupérer l'article dans le panier
     const item = await ItemPanier.findOne({
       where: {
         id_panier: panier.id_panier,
@@ -143,18 +149,32 @@ const updateCartItem = async (req, res) => {
       return res.status(404).json({ message: 'Article non trouvé dans le panier' });
     }
 
-    // Mettre à jour la quantité
+    const difference = quantite - item.quantite;
+
+    if (difference > 0) {
+      // On veut augmenter la quantité → vérifier le stock
+      if (livre.stock < difference) {
+        return res.status(400).json({ message: `Stock insuffisant. Il reste ${livre.stock} exemplaire(s).` });
+      }
+
+      livre.stock -= difference;
+    } else if (difference < 0) {
+      // On diminue la quantité → on remet des stocks
+      livre.stock += Math.abs(difference);
+    }
+
+    await livre.save();
+
     if (quantite <= 0) {
-      // Supprimer l'article si la quantité est 0 ou moins
       await item.destroy();
     } else {
       await item.update({ quantite });
     }
 
-    // Récupérer le panier mis à jour
     const panierMisAJour = await Panier.findByPk(panier.id_panier, {
       include: [{
         model: Livre,
+        as: 'Livres',
         through: {
           attributes: ['quantite', 'prix_unitaire']
         }
@@ -171,6 +191,7 @@ const updateCartItem = async (req, res) => {
   }
 };
 
+
 // @desc    Supprimer un article du panier
 // @route   DELETE /api/front/cart/items/:id
 // @access  Private
@@ -179,13 +200,9 @@ const removeCartItem = async (req, res) => {
     const livreId = req.params.id;
     const clientId = req.user.id_client;
 
-    // Récupérer le panier
     const panier = await Panier.findOne({ where: { id_client: clientId } });
-    if (!panier) {
-      return res.status(404).json({ message: 'Panier non trouvé' });
-    }
+    if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
 
-    // Vérifier si l'article est dans le panier
     const item = await ItemPanier.findOne({
       where: {
         id_panier: panier.id_panier,
@@ -193,17 +210,21 @@ const removeCartItem = async (req, res) => {
       }
     });
 
-    if (!item) {
-      return res.status(404).json({ message: 'Article non trouvé dans le panier' });
+    if (!item) return res.status(404).json({ message: 'Article non trouvé dans le panier' });
+
+    // Remettre le stock
+    const livre = await Livre.findByPk(livreId);
+    if (livre) {
+      livre.stock += item.quantite;
+      await livre.save();
     }
 
-    // Supprimer l'article
     await item.destroy();
 
-    // Récupérer le panier mis à jour
     const panierMisAJour = await Panier.findByPk(panier.id_panier, {
       include: [{
         model: Livre,
+        as: 'Livres',
         through: {
           attributes: ['quantite', 'prix_unitaire']
         }
@@ -220,6 +241,8 @@ const removeCartItem = async (req, res) => {
   }
 };
 
+
+
 // @desc    Vider le panier
 // @route   DELETE /api/front/cart
 // @access  Private
@@ -227,18 +250,21 @@ const clearCart = async (req, res) => {
   try {
     const clientId = req.user.id_client;
 
-    // Récupérer le panier
     const panier = await Panier.findOne({ where: { id_client: clientId } });
-    if (!panier) {
-      return res.status(404).json({ message: 'Panier non trouvé' });
+    if (!panier) return res.status(404).json({ message: 'Panier non trouvé' });
+
+    const items = await ItemPanier.findAll({ where: { id_panier: panier.id_panier } });
+
+    // Pour chaque item, remettre le stock
+    for (const item of items) {
+      const livre = await Livre.findByPk(item.id_livre);
+      if (livre) {
+        livre.stock += item.quantite;
+        await livre.save();
+      }
     }
 
-    // Supprimer tous les articles
-    await ItemPanier.destroy({
-      where: { id_panier: panier.id_panier }
-    });
-
-    // Mettre à jour le prix total
+    await ItemPanier.destroy({ where: { id_panier: panier.id_panier } });
     await panier.update({ prix_total: 0 });
 
     res.json({

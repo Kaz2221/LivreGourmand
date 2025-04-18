@@ -1,8 +1,7 @@
 const { DataTypes } = require('sequelize');
 const databaseSingleton = require('../../config/DatabaseSingleton');
-const Client = require('./Client');
 const sequelize = databaseSingleton.getSequelize();
-
+const Client = require('./Client');
 
 const Panier = sequelize.define('panier', {
   id_panier: {
@@ -36,7 +35,7 @@ const Panier = sequelize.define('panier', {
   timestamps: false
 });
 
-// Définir les associations
+// Relation Panier - Client
 Panier.belongsTo(Client, { foreignKey: 'id_client' });
 Client.hasOne(Panier, { foreignKey: 'id_client' });
 

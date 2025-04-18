@@ -1,7 +1,11 @@
+// models/ListeCadeaux.js
 const { DataTypes } = require('sequelize');
 const databaseSingleton = require('../../config/DatabaseSingleton');
-const Client = require('./Client');
 const sequelize = databaseSingleton.getSequelize();
+
+const Client = require('./Client');
+const Livre = require('./Livre');
+const ItemListeCadeaux = require('./ItemListeCadeaux');
 
 const ListeCadeaux = sequelize.define('liste_cadeaux', {
   id_liste_cadeaux: {
@@ -40,8 +44,22 @@ const ListeCadeaux = sequelize.define('liste_cadeaux', {
   timestamps: false
 });
 
-// Définir les associations
+// Associations
 ListeCadeaux.belongsTo(Client, { foreignKey: 'id_client' });
 Client.hasMany(ListeCadeaux, { foreignKey: 'id_client' });
+
+ListeCadeaux.belongsToMany(Livre, {
+  through: ItemListeCadeaux,
+  foreignKey: 'id_liste_cadeaux',
+  otherKey: 'id_livre',
+  as: 'Livres'
+});
+
+Livre.belongsToMany(ListeCadeaux, {
+  through: ItemListeCadeaux,
+  foreignKey: 'id_livre',
+  otherKey: 'id_liste_cadeaux',
+  as: 'Listes'
+});
 
 module.exports = ListeCadeaux;

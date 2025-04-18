@@ -4,9 +4,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 // Génération du token JWT
-const generateToken = (id, type) => {
+const generateToken = (id_utilisateur, type_utilisateur, id_client) => {
   return jwt.sign(
-    { id, type },
+    { id_utilisateur, type_utilisateur, id_client },
     process.env.JWT_SECRET || 'votre_secret_jwt',
     { expiresIn: '30d' }
   );
@@ -41,7 +41,7 @@ const registerUser = async (req, res) => {
     });
 
     // Générer un token JWT
-    const token = generateToken(utilisateur.id_utilisateur, utilisateur.type_utilisateur);
+    const token = generateToken(utilisateur.id_utilisateur, utilisateur.type_utilisateur, client.id_client);
 
     res.status(201).json({
       message: 'Utilisateur créé avec succès',
@@ -67,20 +67,33 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Vérifier si l'utilisateur existe
+    // Récupération de l'utilisateur
     const utilisateur = await Utilisateur.findOne({ where: { email } });
     if (!utilisateur) {
       return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
     }
 
-    // Vérifier le mot de passe
+    // Vérification du mot de passe
     const isMatch = await utilisateur.verifierMotDePasse(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
     }
 
-    // Générer un token JWT
-    const token = generateToken(utilisateur.id_utilisateur, utilisateur.type_utilisateur);
+    // 💡 Récupération du client lié
+    const client = await Client.findOne({
+      where: { id_utilisateur: utilisateur.id_utilisateur }
+    });
+
+    if (!client) {
+      return res.status(404).json({ message: 'Client non trouvé pour cet utilisateur' });
+    }
+
+    // ✅ Génération du token AVEC id_client
+    const token = generateToken(
+      utilisateur.id_utilisateur,
+      utilisateur.type_utilisateur,
+      client.id_client
+    );
 
     res.json({
       message: 'Connexion réussie',
@@ -89,7 +102,8 @@ const loginUser = async (req, res) => {
         username: utilisateur.username,
         nom: utilisateur.nom,
         email: utilisateur.email,
-        type: utilisateur.type_utilisateur
+        type: utilisateur.type_utilisateur,
+        id_client: client.id_client // 👈 très utile côté front aussi
       },
       token
     });
@@ -98,6 +112,7 @@ const loginUser = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la connexion', error: error.message });
   }
 };
+
 
 // @desc    Obtenir le profil de l'utilisateur connecté
 // @route   GET /api/front/users/profile

@@ -1,27 +1,42 @@
+// backend/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 const { Utilisateur } = require('../models');
 
-// Middleware pour vérifier le token JWT et protéger les routes
+// Middleware pour protéger les routes avec un token JWT
 const protect = async (req, res, next) => {
   let token;
 
-  // Vérifier si le token existe dans les headers
+  // Vérifier si le token est présent dans le header
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
-      // Extraire le token du header
+      // Extraire le token
       token = req.headers.authorization.split(' ')[1];
 
-      // Vérifier le token
+      // Vérifier et décoder le token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'votre_secret_jwt');
 
-      // Récupérer l'utilisateur du token
-      req.user = await Utilisateur.findByPk(decoded.id, {
+      // Récupérer l'utilisateur en base (sans mot de passe)
+      const utilisateur = await Utilisateur.findByPk(decoded.id_utilisateur, {
         attributes: { exclude: ['mot_de_passe'] }
       });
 
+      if (!utilisateur) {
+        return res.status(401).json({ message: 'Utilisateur introuvable' });
+      }
+
+      // Fusionner les infos de la base + celles du token (ex: id_client)
+      req.user = {
+        ...utilisateur.toJSON(),
+        id_client: decoded.id_client,
+        type_utilisateur: decoded.type_utilisateur
+      };
+
+      // ✅ Affichage temporaire pour vérifier ce qui est reçu
+      // console.log('Utilisateur authentifié :', req.user);
+
       next();
     } catch (error) {
-      console.error('Erreur d\'authentification:', error);
+      console.error('Erreur d\'authentification :', error);
       return res.status(401).json({ message: 'Non autorisé, token invalide' });
     }
   }
@@ -31,7 +46,8 @@ const protect = async (req, res, next) => {
   }
 };
 
-// Middleware pour vérifier si l'utilisateur a un rôle spécifique
+
+// Middleware pour vérifier le rôle d'utilisateur
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.type_utilisateur)) {

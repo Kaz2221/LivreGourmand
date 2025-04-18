@@ -1,3 +1,4 @@
+// models/Livre.js
 const { DataTypes } = require('sequelize');
 const databaseSingleton = require('../../config/DatabaseSingleton');
 const sequelize = databaseSingleton.getSequelize();

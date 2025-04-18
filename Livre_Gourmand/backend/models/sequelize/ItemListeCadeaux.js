@@ -1,10 +1,8 @@
 const { DataTypes } = require('sequelize');
 const databaseSingleton = require('../../config/DatabaseSingleton');
-const ListeCadeaux = require('./ListeCadeaux');
-const Livre = require('./Livre');
-const Utilisateur = require('./Utilisateur');
-
 const sequelize = databaseSingleton.getSequelize();
+
+// Déclare le modèle sans les associations
 const ItemListeCadeaux = sequelize.define('item_liste_cadeaux', {
   id_liste_cadeaux: {
     type: DataTypes.INTEGER,
@@ -45,12 +43,5 @@ const ItemListeCadeaux = sequelize.define('item_liste_cadeaux', {
   tableName: 'items_liste_cadeaux',
   timestamps: false
 });
-
-// Définir les associations
-ItemListeCadeaux.belongsTo(ListeCadeaux, { foreignKey: 'id_liste_cadeaux' });
-ItemListeCadeaux.belongsTo(Livre, { foreignKey: 'id_livre' });
-ItemListeCadeaux.belongsTo(Utilisateur, { foreignKey: 'id_acheteur', as: 'acheteur' });
-ListeCadeaux.belongsToMany(Livre, { through: ItemListeCadeaux, foreignKey: 'id_liste_cadeaux' });
-Livre.belongsToMany(ListeCadeaux, { through: ItemListeCadeaux, foreignKey: 'id_livre' });
 
 module.exports = ItemListeCadeaux;

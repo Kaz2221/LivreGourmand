@@ -10,6 +10,23 @@ const ItemCommande = require('./sequelize/ItemCommande');
 const Paiement = require('./sequelize/Paiement');
 const Avis = require('./sequelize/Avis');
 
+// 📦 Association Panier ↔ Livre via ItemPanier
+Panier.belongsToMany(Livre, {
+  through: ItemPanier,
+  foreignKey: 'id_panier',
+  otherKey: 'id_livre',
+  as: 'Livres' // utilisé dans getCart()
+});
+
+Livre.belongsToMany(Panier, {
+  through: ItemPanier,
+  foreignKey: 'id_livre',
+  otherKey: 'id_panier',
+  as: 'paniers'
+});
+
+
+
 module.exports = {
   Utilisateur,
   Client,
