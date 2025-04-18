@@ -124,8 +124,48 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// @desc    Mettre à jour le profil de l'utilisateur connecté
+// @route   PUT /api/front/users/profile
+// @access  Private
+const updateUserProfile = async (req, res) => {
+  try {
+    const utilisateur = await Utilisateur.findByPk(req.user.id_utilisateur);
+    
+    if (!utilisateur) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    // Mettre à jour les champs si fournis
+    if (req.body.username) utilisateur.username = req.body.username;
+    if (req.body.nom) utilisateur.nom = req.body.nom;
+    if (req.body.email) utilisateur.email = req.body.email;
+    if (req.body.adresse) utilisateur.adresse = req.body.adresse;
+    
+    // Si un nouveau mot de passe est fourni, le mettre à jour
+    if (req.body.password) {
+      utilisateur.mot_de_passe = req.body.password;
+    }
+
+    await utilisateur.save();
+
+    // Retourner l'utilisateur sans le mot de passe
+    res.json({
+      id: utilisateur.id_utilisateur,
+      username: utilisateur.username,
+      nom: utilisateur.nom,
+      email: utilisateur.email,
+      adresse: utilisateur.adresse,
+      type: utilisateur.type_utilisateur
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du profil:', error);
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
-  getUserProfile
+  getUserProfile,
+  updateUserProfile 
 };

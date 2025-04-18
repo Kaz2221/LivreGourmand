@@ -1,14 +1,16 @@
-// src/pages/BookDetailsPage.jsx
+// src/pages/BookDetailsPage.jsx - mise à jour
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FaStar, FaShoppingCart } from 'react-icons/fa';
+import { FaStar, FaArrowLeft } from 'react-icons/fa';
 import { bookService } from '../services/bookService';
+import AddToCartButton from '../components/common/AddToCartButton';
 
 const BookDetailsPage = () => {
   const { id } = useParams();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [quantity, setQuantity] = useState(1);
   const [recommendations, setRecommendations] = useState([]);
 
   useEffect(() => {
@@ -41,10 +43,20 @@ const BookDetailsPage = () => {
     }
   }, [id]);
 
+  const handleQuantityChange = (e) => {
+    const value = parseInt(e.target.value);
+    if (value > 0) {
+      setQuantity(value);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Chargement des détails du livre...</div>
+        <div className="text-center">
+          <div className="animate-spin inline-block h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+          <p className="mt-2">Chargement des détails du livre...</p>
+        </div>
       </div>
     );
   }
@@ -93,10 +105,44 @@ const BookDetailsPage = () => {
                   </div>
                 )}
               </div>
-              <button className="mt-4 bg-primary text-white w-full py-3 rounded-lg flex items-center justify-center hover:bg-primary/90 transition-colors">
-                <FaShoppingCart className="mr-2" />
-                <span>Ajouter au panier</span>
-              </button>
+              
+              {/* Section d'ajout au panier */}
+              <div className="mt-6">
+                <div className="flex items-center mb-4">
+                  <label htmlFor="quantity" className="mr-3 text-gray-700 font-medium">Quantité:</label>
+                  <div className="relative flex items-center w-24">
+                    <button 
+                      onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-600 h-8 w-8 rounded-l flex items-center justify-center"
+                    >-</button>
+                    <input
+                      type="number"
+                      id="quantity"
+                      min="1"
+                      value={quantity}
+                      onChange={handleQuantityChange}
+                      className="h-8 w-full border-t border-b text-center"
+                    />
+                    <button 
+                      onClick={() => setQuantity(prev => prev + 1)}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-600 h-8 w-8 rounded-r flex items-center justify-center"
+                    >+</button>
+                  </div>
+                </div>
+
+                <AddToCartButton 
+                  livre={book} 
+                  quantite={quantity} 
+                  className="w-full"
+                />
+              </div>
+              
+              <Link 
+                to="/shop" 
+                className="mt-4 flex items-center justify-center text-primary hover:underline"
+              >
+                <FaArrowLeft className="mr-1" /> Continuer mes achats
+              </Link>
             </div>
             
             {/* Informations du livre */}
@@ -136,7 +182,12 @@ const BookDetailsPage = () => {
                     <li><span className="text-gray-600">Auteur:</span> {book.auteur}</li>
                     <li><span className="text-gray-600">Catégorie:</span> {book.categorie}</li>
                     <li><span className="text-gray-600">Niveau:</span> {book.niveau_expertise}</li>
-                    <li><span className="text-gray-600">Stock:</span> {book.stock} disponible(s)</li>
+                    <li>
+                      <span className="text-gray-600">Stock:</span> {' '}
+                      <span className={`font-medium ${book.stock > 10 ? 'text-green-600' : book.stock > 0 ? 'text-orange-500' : 'text-red-600'}`}>
+                        {book.stock > 0 ? `${book.stock} disponible(s)` : 'Épuisé'}
+                      </span>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -158,7 +209,7 @@ const BookDetailsPage = () => {
                           ? rec.image_url 
                           : `http://localhost:3001${rec.image_url}`}
                         alt={rec.titre}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-primary/10 text-center p-4">
@@ -177,12 +228,15 @@ const BookDetailsPage = () => {
                   <div className="p-4">
                     <h3 className="font-bold text-primary mb-2 line-clamp-1">{rec.titre}</h3>
                     <p className="text-gray-600 mb-2 line-clamp-1">{rec.auteur}</p>
-                    <Link 
-                      to={`/book/${rec.id_livre}`}
-                      className="bg-primary text-white text-sm px-3 py-1 rounded block text-center hover:bg-primary/90"
-                    >
-                      Voir ce livre
-                    </Link>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-secondary">{parseFloat(rec.prix).toFixed(2)} €</span>
+                      <Link 
+                        to={`/book/${rec.id_livre}`}
+                        className="bg-primary text-white text-sm px-3 py-1 rounded block text-center hover:bg-primary/90"
+                      >
+                        Voir ce livre
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))}
