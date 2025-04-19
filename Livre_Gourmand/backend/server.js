@@ -4,6 +4,7 @@ const path = require('path');
 const databaseSingleton = require('./config/DatabaseSingleton');
 
 // Routes front
+const stripeRoutes = require('./routes/front/stripeRoutes');
 const userRoutes = require('./routes/front/userRoutes');
 const bookRoutes = require('./routes/front/bookRoutes');
 const cartRoutes = require('./routes/front/cartRoutes');
@@ -34,6 +35,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 databaseSingleton.testConnection();
 
 // Routes front-end
+app.use('/api/front/stripe', stripeRoutes);
 app.use('/api/front/users', userRoutes);
 app.use('/api/front/books', bookRoutes);
 app.use('/api/front/cart', cartRoutes);

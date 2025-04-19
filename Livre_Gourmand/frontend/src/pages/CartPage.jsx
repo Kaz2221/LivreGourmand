@@ -18,7 +18,18 @@ const CartPage = () => {
       try {
         setLoading(true);
         const data = await cartService.getCart();
+        console.log("Panier reçu du backend :", data);
         setCart(data);
+  
+        // 🔽 Ajoute cette ligne ici
+        if (Array.isArray(data?.Livres)) {
+          const formattedItems = data.Livres.map(livre => ({
+            title: livre.titre,
+            price: parseFloat(livre.item_panier.prix_unitaire),
+            quantity: livre.item_panier.quantite
+          }));
+          localStorage.setItem('cartItems', JSON.stringify(formattedItems));
+        }
       } catch (err) {
         console.error('Erreur lors du chargement du panier:', err);
         setError('Impossible de charger votre panier. Veuillez réessayer.');
@@ -26,11 +37,13 @@ const CartPage = () => {
         setLoading(false);
       }
     };
-
+  
     if (isAuthenticated) {
       fetchCart();
     }
   }, [isAuthenticated]);
+  
+  
 
   const handleQuantityChange = async (bookId, newQuantity) => {
     if (newQuantity < 1) return;

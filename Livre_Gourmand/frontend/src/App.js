@@ -6,12 +6,15 @@ import Footer from './components/common/Footer';
 import HomePage from './pages/HomePage';
 import BookDetailsPage from './pages/BookDetailsPage';
 import LoginPage from './pages/LoginPage';
+import CheckoutPage from './pages/CheckoutPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import CartPage from './pages/CartPage';
 import ContactPage from './pages/ContactPage';
 import WishlistPage from './pages/WishlistPage';
 import ShopPage from './pages/ShopPage';
+import SuccessPage from './pages/SuccessPage';
+import CancelPage from './pages/CancelPage';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import PrivateRoute from './components/PrivateRoute';
@@ -32,7 +35,9 @@ function App() {
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/shop" element={<ShopPage />} />
-
+              <Route path="/checkout" element={<CheckoutPage />} />        
+              <Route path="/success" element={<SuccessPage />} />
+              <Route path="/cancel" element={<CancelPage />} />
               {/* Routes protégées */}
               <Route 
                 path="/profile" 

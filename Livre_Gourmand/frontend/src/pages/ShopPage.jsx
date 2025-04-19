@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { bookService } from '../services/bookService';
 import { Link, useLocation } from 'react-router-dom';
-import { FaSearch } from 'react-icons/fa';
+import { FaSearch, FaStar } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 // Fonction utilitaire pour obtenir les paramètres de recherche de l'URL
@@ -31,8 +31,22 @@ const ShopPage = () => {
         if (initialSearch) params.search = initialSearch;
 
         const res = await bookService.getBooks(params);
-        setBooks(res.livres);
-        setFilteredBooks(res.livres);
+        
+        // Calculer la note moyenne pour chaque livre
+        const booksWithRatings = res.livres.map(book => {
+          if (book.avis && book.avis.length > 0) {
+            const sum = book.avis.reduce((total, avis) => total + avis.note, 0);
+            book.averageRating = (sum / book.avis.length).toFixed(1);
+            book.reviewCount = book.avis.length;
+          } else {
+            book.averageRating = 0;
+            book.reviewCount = 0;
+          }
+          return book;
+        });
+        
+        setBooks(booksWithRatings);
+        setFilteredBooks(booksWithRatings);
       } catch (err) {
         console.error('Erreur lors du chargement des livres:', err);
       } finally {
@@ -152,8 +166,28 @@ const ShopPage = () => {
                       <div className="w-full h-full flex items-center justify-center text-3xl">📚</div>
                     )}
                   </div>
-                  <h3 className="font-bold text-primary text-lg mb-1">{book.titre}</h3>
-                  <p className="text-sm text-gray-600">{book.auteur}</p>
+                  <h3 className="font-bold text-primary text-lg mb-1 line-clamp-1">{book.titre}</h3>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-1">{book.auteur}</p>
+                  
+                  {/* Affichage des étoiles et du nombre d'avis */}
+                  <div className="flex items-center mb-2">
+                    <div className="flex text-yellow-400 mr-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <FaStar
+                          key={star}
+                          className={`${
+                            star <= Math.round(book.averageRating)
+                              ? 'text-yellow-400'
+                              : 'text-gray-300'
+                          } text-sm`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      ({book.reviewCount})
+                    </span>
+                  </div>
+                  
                   <p className="text-primary font-semibold mt-1">{parseFloat(book.prix).toFixed(2)} €</p>
                   {book.stock > 20 && <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Nouveau</span>}
                 </Link>
