@@ -12,6 +12,7 @@ class CommandeBuilder {
       id_client: null,
       statut: 'EN_ATTENTE',
       montant_total: 0,
+      transaction_id: null, // Ajout du champ transaction_id
       items: []
     };
     return this;
@@ -38,13 +39,20 @@ class CommandeBuilder {
     return this;
   }
 
+  // Nouvelle méthode pour définir l'ID de transaction
+  setTransactionId(transactionId) {
+    this.commandeData.transaction_id = transactionId;
+    return this;
+  }
+
   async build() {
     try {
-      // Créer la commande dans la base de données
+      // Créer la commande dans la base de données avec transaction_id
       const commande = await Commande.create({
         id_client: this.commandeData.id_client,
         statut: this.commandeData.statut,
-        montant_total: this.commandeData.montant_total
+        montant_total: this.commandeData.montant_total,
+        transaction_id: this.commandeData.transaction_id // Inclure le transaction_id
       });
 
       // Ajouter les items de commande

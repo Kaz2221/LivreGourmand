@@ -37,7 +37,7 @@ const Header = () => {
         <nav className="hidden md:flex space-x-6">
           <Link to="/" className="hover:text-secondary">Accueil</Link>
           <Link to="/shop" className="hover:text-secondary">Boutique</Link>
-          <Link to="/categories" className="hover:text-secondary">Catégories</Link>
+
           <Link to="/wishlist" className="hover:text-secondary flex items-center"><FaHeart className="mr-1" /> Wishlist</Link>
           <Link to="/contact" className="hover:text-secondary flex items-center"><FaEnvelope className="mr-1" /> Contact</Link>
         </nav>

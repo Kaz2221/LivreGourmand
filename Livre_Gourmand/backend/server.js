@@ -1,3 +1,4 @@
+// backend/server.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -34,8 +35,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Test de la connexion à la base de données avec le Singleton
 databaseSingleton.testConnection();
 
-// Routes front-end
+// Route Stripe (sans authentification)
 app.use('/api/front/stripe', stripeRoutes);
+
+// Routes front-end (avec authentification)
 app.use('/api/front/users', userRoutes);
 app.use('/api/front/books', bookRoutes);
 app.use('/api/front/cart', cartRoutes);

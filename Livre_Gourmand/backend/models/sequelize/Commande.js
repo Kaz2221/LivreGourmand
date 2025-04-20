@@ -1,3 +1,4 @@
+// backend/models/sequelize/Commande.js
 const { DataTypes } = require('sequelize');
 const Client = require('./Client');
 const databaseSingleton = require('../../config/DatabaseSingleton');
@@ -29,6 +30,11 @@ const Commande = sequelize.define('commande', {
   montant_total: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
+  },
+  transaction_id: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    unique: true
   }
 }, {
   tableName: 'commandes',
