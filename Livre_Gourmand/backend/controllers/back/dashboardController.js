@@ -1,6 +1,6 @@
 // backend/controllers/back/dashboardController.js
-const { Commande, Utilisateur, Livre, Avis } = require('../../models');
-const { sequelize } = require('../../config/DatabaseSingleton').getSequelize();
+const { Commande, Utilisateur, Livre, Avis, ItemCommande } = require('../../models');
+const sequelize = require('../../config/DatabaseSingleton').getSequelize();
 const { Op } = require('sequelize');
 
 // @desc    Récupérer les statistiques pour le tableau de bord admin
@@ -57,14 +57,14 @@ const getDashboardStats = async (req, res) => {
     // Produits populaires
     const produitsPop = await ItemCommande.findAll({
       attributes: [
-        'id_livre',
+        ['id_livre', 'id_livre'],
         [sequelize.fn('SUM', sequelize.col('quantite')), 'total_vendu']
       ],
       include: [{
         model: Livre,
-        attributes: ['titre', 'prix', 'stock']
+        attributes: ['id_livre', 'titre', 'prix', 'stock']
       }],
-      group: ['id_livre', 'Livre.id_livre'],
+      group: ['item_commande.id_livre', 'livre.id_livre'],
       order: [[sequelize.literal('total_vendu'), 'DESC']],
       limit: 5
     });
@@ -128,27 +128,27 @@ const getSalesData = async (req, res) => {
       case 'jour':
         startDate.setDate(startDate.getDate() - 30);
         groupBy = 'date';
-        dateFormat = '%Y-%m-%d';
+        dateFormat = 'YYYY-MM-DD'; // ✅ PostgreSQL
         break;
       case 'semaine':
         startDate.setMonth(startDate.getMonth() - 3);
         groupBy = 'semaine';
-        dateFormat = '%Y-%u'; // Année-Semaine
+        dateFormat = 'IYYY-IW'; // ✅ ISO Year-Week
         break;
       case 'mois':
         startDate.setFullYear(startDate.getFullYear() - 1);
         groupBy = 'mois';
-        dateFormat = '%Y-%m';
+        dateFormat = 'YYYY-MM'; // ✅ PostgreSQL
         break;
       case 'annee':
         startDate.setFullYear(startDate.getFullYear() - 5);
         groupBy = 'annee';
-        dateFormat = '%Y';
+        dateFormat = 'YYYY'; // ✅ PostgreSQL
         break;
       default:
         startDate.setMonth(startDate.getMonth() - 1);
         groupBy = 'date';
-        dateFormat = '%Y-%m-%d';
+        dateFormat = 'YYYY-MM-DD'; // ✅ fallback
     }
 
     dateCondition = {
@@ -159,7 +159,7 @@ const getSalesData = async (req, res) => {
 
     const ventes = await Commande.findAll({
       attributes: [
-        [sequelize.fn('DATE_FORMAT', sequelize.col('date_commande'), dateFormat), groupBy],
+        [sequelize.fn('to_char', sequelize.col('date_commande'), dateFormat), groupBy],
         [sequelize.fn('COUNT', sequelize.col('id_commande')), 'commandes'],
         [sequelize.fn('SUM', sequelize.col('montant_total')), 'total']
       ],
@@ -169,7 +169,7 @@ const getSalesData = async (req, res) => {
           [Op.ne]: 'ANNULEE'
         }
       },
-      group: [groupBy],
+      group: [sequelize.fn('to_char', sequelize.col('date_commande'), dateFormat)],
       order: [[sequelize.literal(groupBy), 'ASC']]
     });
 

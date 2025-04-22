@@ -15,9 +15,12 @@ import WishlistPage from './pages/WishlistPage';
 import ShopPage from './pages/ShopPage';
 import SuccessPage from './pages/SuccessPage';
 import CancelPage from './pages/CancelPage';
+// Import du dashboard administrateur
+import DashboardPage from './pages/admin/DashboardPage';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import PrivateRoute from './components/PrivateRoute';
+import AdminRoute from './components/AdminRoute';
 
 function App() {
   return (
@@ -28,17 +31,17 @@ function App() {
 
           <main className="flex-grow">
             <Routes>
+              {/* Routes publiques */}
               <Route path="/" element={<HomePage />} />
               <Route path="/book/:id" element={<BookDetailsPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/contact" element={<ContactPage />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/shop" element={<ShopPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />        
               <Route path="/success" element={<SuccessPage />} />
               <Route path="/cancel" element={<CancelPage />} />
-              {/* Routes protégées */}
+              
+              {/* Routes protégées pour utilisateurs connectés */}
               <Route 
                 path="/profile" 
                 element={
@@ -53,6 +56,32 @@ function App() {
                   <PrivateRoute>
                     <CartPage />
                   </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/wishlist" 
+                element={
+                  <PrivateRoute>
+                    <WishlistPage />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/checkout" 
+                element={
+                  <PrivateRoute>
+                    <CheckoutPage />
+                  </PrivateRoute>
+                } 
+              />
+
+              {/* Routes protégées pour administrateurs */}
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <AdminRoute>
+                    <DashboardPage />
+                  </AdminRoute>
                 } 
               />
             </Routes>

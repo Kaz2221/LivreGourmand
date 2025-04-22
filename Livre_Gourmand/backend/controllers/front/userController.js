@@ -79,20 +79,24 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
     }
 
-    // 💡 Récupération du client lié
-    const client = await Client.findOne({
-      where: { id_utilisateur: utilisateur.id_utilisateur }
-    });
+    // Log pour déboguer
+    console.log('Type d\'utilisateur:', utilisateur.type_utilisateur);
 
-    if (!client) {
-      return res.status(404).json({ message: 'Client non trouvé pour cet utilisateur' });
+    // Récupération du client ou administrateur lié
+    let id_client = null;
+    
+    if (utilisateur.type_utilisateur === 'client') {
+      const client = await Client.findOne({
+        where: { id_utilisateur: utilisateur.id_utilisateur }
+      });
+      id_client = client ? client.id_client : null;
     }
 
-    // ✅ Génération du token AVEC id_client
+    // Génération du token avec le type d'utilisateur
     const token = generateToken(
       utilisateur.id_utilisateur,
       utilisateur.type_utilisateur,
-      client.id_client
+      id_client
     );
 
     res.json({
@@ -102,8 +106,8 @@ const loginUser = async (req, res) => {
         username: utilisateur.username,
         nom: utilisateur.nom,
         email: utilisateur.email,
-        type: utilisateur.type_utilisateur,
-        id_client: client.id_client // 👈 très utile côté front aussi
+        type: utilisateur.type_utilisateur, // Assurez-vous que ce champ est bien renvoyé
+        id_client: id_client
       },
       token
     });

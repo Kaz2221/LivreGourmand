@@ -9,7 +9,7 @@ const stripeRoutes = require('./routes/front/stripeRoutes');
 const userRoutes = require('./routes/front/userRoutes');
 const bookRoutes = require('./routes/front/bookRoutes');
 const cartRoutes = require('./routes/front/cartRoutes');
-const orderRoutes = require('./routes/front/orderRoutes');
+const orderRoutes = require('./routes/front/orderRoutes'); // Assurez-vous que cette ligne existe
 const wishlistRoutes = require('./routes/front/wishlistRoutes');
 
 // Routes back
@@ -42,7 +42,7 @@ app.use('/api/front/stripe', stripeRoutes);
 app.use('/api/front/users', userRoutes);
 app.use('/api/front/books', bookRoutes);
 app.use('/api/front/cart', cartRoutes);
-app.use('/api/front/orders', orderRoutes);
+app.use('/api/front/orders', orderRoutes); // Assurez-vous que cette ligne existe
 app.use('/api/front/wishlists', wishlistRoutes);
 
 // Routes back-end

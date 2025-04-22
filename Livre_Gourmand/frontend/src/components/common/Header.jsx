@@ -1,14 +1,14 @@
 // frontend/src/components/common/Header.jsx
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaShoppingCart, FaUser, FaSearch, FaSignOutAlt, FaBook, FaList, FaHeart, FaEnvelope } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaSignOutAlt, FaBook, FaList, FaHeart, FaEnvelope, FaTachometerAlt } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import { CartContext } from '../../context/CartContext';
-import { motion } from 'framer-motion'; // Importer motion de framer-motion
+import { motion } from 'framer-motion';
 
 const Header = () => {
   const { user, logout, isAuthenticated } = useContext(AuthContext);
-  const { itemCount, cartShake } = useContext(CartContext); // Récupérer cartShake du contexte
+  const { itemCount, cartShake } = useContext(CartContext);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -27,6 +27,9 @@ const Header = () => {
     }
   };
 
+  // Vérifier si l'utilisateur est un administrateur ou gestionnaire
+  const isAdmin = user && (user.type === 'administrateur' || user.type === 'gestionnaire');
+
   return (
     <header className="bg-primary text-white sticky top-0 z-50">
       <div className="container mx-auto flex justify-between items-center p-4">
@@ -37,9 +40,15 @@ const Header = () => {
         <nav className="hidden md:flex space-x-6">
           <Link to="/" className="hover:text-secondary">Accueil</Link>
           <Link to="/shop" className="hover:text-secondary">Boutique</Link>
-
           <Link to="/wishlist" className="hover:text-secondary flex items-center"><FaHeart className="mr-1" /> Wishlist</Link>
           <Link to="/contact" className="hover:text-secondary flex items-center"><FaEnvelope className="mr-1" /> Contact</Link>
+          
+          {/* Lien vers le tableau de bord pour les administrateurs */}
+          {isAdmin && (
+            <Link to="/admin/dashboard" className="hover:text-secondary flex items-center">
+              <FaTachometerAlt className="mr-1" /> Dashboard
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center space-x-4">
@@ -97,6 +106,18 @@ const Header = () => {
                     >
                       <FaBook className="mr-2" /> Ma liste de souhaits
                     </Link>
+                    
+                    {/* Option Dashboard pour les administrateurs */}
+                    {isAdmin && (
+                      <Link 
+                        to="/admin/dashboard" 
+                        className="block px-4 py-2 text-sm text-primary hover:bg-gray-100 flex items-center"
+                        onClick={() => setShowDropdown(false)}
+                      >
+                        <FaTachometerAlt className="mr-2" /> Dashboard Admin
+                      </Link>
+                    )}
+                    
                     <button 
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
@@ -148,9 +169,11 @@ const Header = () => {
         <div className="flex flex-wrap justify-around px-4 py-2">
           <Link to="/" className="text-white/80 py-1">Accueil</Link>
           <Link to="/shop" className="text-white/80 py-1">Boutique</Link>
-          <Link to="/categories" className="text-white/80 py-1">Catégories</Link>
           <Link to="/wishlist" className="text-white/80 py-1">Wishlist</Link>
           <Link to="/contact" className="text-white/80 py-1">Contact</Link>
+          {isAdmin && (
+            <Link to="/admin/dashboard" className="text-white/80 py-1">Dashboard</Link>
+          )}
         </div>
       </div>
     </header>

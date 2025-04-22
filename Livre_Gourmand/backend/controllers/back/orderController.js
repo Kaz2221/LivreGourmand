@@ -2,6 +2,33 @@
 const { Commande, ItemCommande, Utilisateur, Livre, Paiement } = require('../../models');
 const { Op } = require('sequelize');
 
+const getUserOrders = async (req, res) => {
+  try {
+    const clientId = req.user.id_client;
+
+    const commandes = await Commande.findAll({
+      where: { id_client: clientId },
+      include: [
+        {
+          model: Livre,
+          through: {
+            model: ItemCommande,
+            attributes: ['quantite', 'prix_unitaire']
+          }
+        },
+        {
+          model: Paiement
+        }
+      ],
+      order: [['date_commande', 'DESC']]
+    });
+
+    res.json(commandes);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des commandes:', error);
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
 // @desc    Récupérer toutes les commandes (pour l'admin)
 // @route   GET /api/back/orders
 // @access  Private/Admin
@@ -164,5 +191,6 @@ const updateOrderStatus = async (req, res) => {
 module.exports = {
   getOrders,
   getOrderById,
-  updateOrderStatus
+  updateOrderStatus,
+  getUserOrders
 };
