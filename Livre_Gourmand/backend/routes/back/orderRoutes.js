@@ -4,7 +4,6 @@ const router = express.Router();
 const { 
   getOrders, 
   getOrderById, 
-  getUserOrders,
   updateOrderStatus 
 } = require('../../controllers/back/orderController');
 const { protect, authorize } = require('../../middlewares/authMiddleware');
@@ -13,8 +12,8 @@ const { protect, authorize } = require('../../middlewares/authMiddleware');
 router.use(protect);
 router.use(authorize('administrateur', 'gestionnaire'));
 
-router.get('/', protect, getUserOrders);
-router.get('/', getOrders);
+// Utilisez des chemins différents pour les différentes fonctionnalités
+router.get('/', getOrders); // Récupérer toutes les commandes (pour l'admin)
 router.get('/:id', getOrderById);
 router.put('/:id/status', updateOrderStatus);
 

@@ -1,34 +1,8 @@
 // backend/controllers/back/orderController.js
-const { Commande, ItemCommande, Utilisateur, Livre, Paiement } = require('../../models');
+const { Commande, ItemCommande, Utilisateur, Client, Livre, Paiement } = require('../../models');
 const { Op } = require('sequelize');
+const sequelize = require('../../config/DatabaseSingleton').getSequelize();
 
-const getUserOrders = async (req, res) => {
-  try {
-    const clientId = req.user.id_client;
-
-    const commandes = await Commande.findAll({
-      where: { id_client: clientId },
-      include: [
-        {
-          model: Livre,
-          through: {
-            model: ItemCommande,
-            attributes: ['quantite', 'prix_unitaire']
-          }
-        },
-        {
-          model: Paiement
-        }
-      ],
-      order: [['date_commande', 'DESC']]
-    });
-
-    res.json(commandes);
-  } catch (error) {
-    console.error('Erreur lors de la récupération des commandes:', error);
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
-  }
-};
 // @desc    Récupérer toutes les commandes (pour l'admin)
 // @route   GET /api/back/orders
 // @access  Private/Admin
@@ -90,25 +64,50 @@ const getOrders = async (req, res) => {
       order.push(['date_commande', 'DESC']);
     }
 
+    // S'assurer que nous utilisons correctement les relations Client -> Utilisateur
     const { count, rows: commandes } = await Commande.findAndCountAll({
       where: whereCondition,
       order,
       limit,
       offset,
-      include: [
-        {
+      include: [{
+        model: Client,
+        required: false,
+        include: [{
           model: Utilisateur,
-          attributes: ['id_utilisateur', 'nom', 'email'],
-          through: { attributes: [] }
-        },
-        {
-          model: Paiement
-        }
-      ]
+          attributes: ['id_utilisateur', 'nom', 'email', 'username']
+        }]
+      }, {
+        model: Paiement,
+        required: false
+      }]
+    });
+
+    // Pour le débogage, regardons la structure des données
+    // console.log('Premier résultat:', JSON.stringify(commandes[0], null, 2));
+
+    // Créer un format uniforme pour les réponses
+    const commandesFormatted = commandes.map(commande => {
+      const plainCommande = commande.get({ plain: true });
+      
+      // Si nous avons un Client avec un Utilisateur, extraire les informations
+      if (plainCommande.Client && plainCommande.Client.Utilisateur) {
+        plainCommande.clientInfo = {
+          nom: plainCommande.Client.Utilisateur.nom || plainCommande.Client.Utilisateur.username || 'Sans nom',
+          email: plainCommande.Client.Utilisateur.email
+        };
+      } else {
+        plainCommande.clientInfo = {
+          nom: 'Client ID: ' + plainCommande.id_client,
+          email: 'Non disponible'
+        };
+      }
+      
+      return plainCommande;
     });
 
     res.json({
-      commandes,
+      commandes: commandesFormatted,
       page,
       pages: Math.ceil(count / limit),
       total: count
@@ -129,8 +128,11 @@ const getOrderById = async (req, res) => {
     const commande = await Commande.findByPk(commandeId, {
       include: [
         {
-          model: Utilisateur,
-          attributes: ['id_utilisateur', 'nom', 'email', 'adresse']
+          model: Client,
+          include: [{
+            model: Utilisateur,
+            attributes: ['id_utilisateur', 'nom', 'email', 'adresse']
+          }]
         },
         {
           model: Livre,
@@ -149,7 +151,13 @@ const getOrderById = async (req, res) => {
       return res.status(404).json({ message: 'Commande non trouvée' });
     }
 
-    res.json(commande);
+    // Transformer les données pour inclure les informations de l'utilisateur
+    const commandeFormatted = commande.get({ plain: true });
+    if (commandeFormatted.Client && commandeFormatted.Client.Utilisateur) {
+      commandeFormatted.Utilisateur = commandeFormatted.Client.Utilisateur;
+    }
+
+    res.json(commandeFormatted);
   } catch (error) {
     console.error('Erreur lors de la récupération de la commande:', error);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -184,6 +192,32 @@ const updateOrderStatus = async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur lors de la mise à jour du statut de la commande:', error);
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
+
+// Fonction pour les commandes de l'utilisateur connecté (pour le front)
+const getUserOrders = async (req, res) => {
+  try {
+    const clientId = req.user.id_client;
+
+    const commandes = await Commande.findAll({
+      where: { id_client: clientId },
+      include: [{
+        model: Livre,
+        through: {
+          model: ItemCommande,
+          attributes: ['quantite', 'prix_unitaire']
+        }
+      }, {
+        model: Paiement
+      }],
+      order: [['date_commande', 'DESC']]
+    });
+
+    res.json(commandes);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des commandes:', error);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 };

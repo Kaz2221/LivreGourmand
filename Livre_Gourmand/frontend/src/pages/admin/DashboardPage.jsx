@@ -225,28 +225,30 @@ const DashboardPage = () => {
           />
         </div>
 
-        {/* Graphique et top catégories */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Graphique des revenus mensuels */}
-          <div className="lg:col-span-2 bg-primary text-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Revenus totaux</h2>
-            <div className="text-sm text-gray-300 mb-2">
-              {stats?.ventes?.total ? stats.ventes.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : '0 €'} 
-              <span className="ml-2 text-green-300">5% de plus que le mois dernier</span>
-            </div>
-            
-            {/* Graphique des revenus mensuels utilisant RevenueChart */}
-            <div className="h-64 bg-white/10 rounded-md p-2">
-              <RevenueChart />
-            </div>
-          </div>
+{/* Graphique et top catégories */}
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+  {/* Graphique des revenus mensuels */}
+  <div className="lg:col-span-2 bg-primary text-white p-6 rounded-lg shadow-md">
+    <h2 className="text-xl font-semibold mb-4">Revenus</h2>
+    <div className="text-sm text-gray-300 mb-2">
+      {stats?.ventes?.total ? stats.ventes.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : '0 €'} 
+      <span className="ml-2 text-green-300">
+        {stats?.ventes?.mois && stats?.ventes?.total ? 
+          `${((stats.ventes.mois / stats.ventes.total) * 100).toFixed(1)}% du total ce mois-ci` : 
+          '0% de croissance'}
+      </span>
+    </div>
+    
+    {/* Graphique des revenus utilisant le composant amélioré */}
+    <RevenueChart />
+  </div>
 
-          {/* Top 5 Catégories */}
-          <div className="bg-primary text-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Top 5 Catégories</h2>
-            <TopCategories />
-          </div>
-        </div>
+  {/* Top 5 Catégories */}
+  <div className="bg-primary text-white p-6 rounded-lg shadow-md">
+    <h2 className="text-xl font-semibold mb-4">Top 5 Catégories</h2>
+    <TopCategories />
+  </div>
+</div>
 
         {/* Tableau des commandes récentes */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -278,44 +280,61 @@ const DashboardPage = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-              {Array.isArray(recentOrders) && recentOrders.length > 0 ? (
-                  recentOrders.map((order) => {
-                    const statusInfo = getStatusLabel(order.statut);
-                    return (
-                      <tr key={order.id_commande}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          #{order.id_commande}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(order.date_commande).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {order.Utilisateur ? order.Utilisateur.nom : 'Client inconnu'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${statusInfo.color}`}>
-                            {statusInfo.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {parseFloat(order.montant_total).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-primary hover:text-primary/80">
-                            <FaEllipsisV />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
-                      Aucune commande récente
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+{Array.isArray(recentOrders) && recentOrders.length > 0 ? (
+  recentOrders.map((order) => {
+    const statusInfo = getStatusLabel(order.statut);
+    
+    // Récupérer le nom du client en utilisant la structure correcte
+    let clientName = "Client inconnu";
+    
+    // Utiliser la nouvelle structure clientInfo si disponible
+    if (order.clientInfo && order.clientInfo.nom) {
+      clientName = order.clientInfo.nom;
+    }
+    // Sinon, essayer les anciennes méthodes
+    else if (order.Client && order.Client.Utilisateur) {
+      clientName = order.Client.Utilisateur.nom || order.Client.Utilisateur.username || "Client: " + order.id_client;
+    } 
+    // Fallback final
+    else if (order.id_client) {
+      clientName = "Client ID: " + order.id_client;
+    }
+    
+    return (
+      <tr key={order.id_commande}>
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          #{order.id_commande}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {new Date(order.date_commande).toLocaleDateString('fr-FR')}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {clientName}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <span className={`px-2 py-1 text-xs rounded-full ${statusInfo.color}`}>
+            {statusInfo.label}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          {parseFloat(order.montant_total).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <button className="text-primary hover:text-primary/80">
+            <FaEllipsisV />
+          </button>
+        </td>
+      </tr>
+    );
+  })
+) : (
+  <tr>
+    <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+      Aucune commande récente
+    </td>
+  </tr>
+)}
+</tbody>
             </table>
           </div>
         </div>

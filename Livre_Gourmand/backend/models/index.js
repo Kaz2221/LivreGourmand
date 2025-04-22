@@ -25,7 +25,13 @@ Livre.belongsToMany(Panier, {
   as: 'paniers'
 });
 
+// S'assurer que les associations Client -> Utilisateur sont bien définies
+Client.belongsTo(Utilisateur, { foreignKey: 'id_utilisateur' });
+Utilisateur.hasOne(Client, { foreignKey: 'id_utilisateur' });
 
+// S'assurer que les associations Commande -> Client sont bien définies
+Commande.belongsTo(Client, { foreignKey: 'id_client' });
+Client.hasMany(Commande, { foreignKey: 'id_client' });
 
 module.exports = {
   Utilisateur,
