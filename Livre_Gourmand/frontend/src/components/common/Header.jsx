@@ -1,7 +1,7 @@
 // frontend/src/components/common/Header.jsx
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaShoppingCart, FaUser, FaSearch, FaSignOutAlt, FaBook, FaList, FaHeart, FaEnvelope, FaTachometerAlt } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaSignOutAlt, FaBook, FaList, FaHeart, FaEnvelope, FaTachometerAlt, FaShoppingBag, FaUserCog, FaChartLine } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import { CartContext } from '../../context/CartContext';
 import { motion } from 'framer-motion';
@@ -43,11 +43,33 @@ const Header = () => {
           <Link to="/wishlist" className="hover:text-secondary flex items-center"><FaHeart className="mr-1" /> Wishlist</Link>
           <Link to="/contact" className="hover:text-secondary flex items-center"><FaEnvelope className="mr-1" /> Contact</Link>
           
-          {/* Lien vers le tableau de bord pour les administrateurs */}
+          {/* Liens vers le tableau de bord pour les administrateurs */}
           {isAdmin && (
-            <Link to="/admin/dashboard" className="hover:text-secondary flex items-center">
-              <FaTachometerAlt className="mr-1" /> Dashboard
-            </Link>
+            <div className="relative group">
+              <button className="hover:text-secondary flex items-center">
+                <FaTachometerAlt className="mr-1" /> Admin <span className="ml-1">▼</span>
+              </button>
+              <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
+                <Link 
+                  to="/admin/dashboard" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                >
+                  <FaChartLine className="mr-2" /> Tableau de Bord
+                </Link>
+                <Link 
+                  to="/admin/orders" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                >
+                  <FaShoppingBag className="mr-2" /> Gestion Commandes
+                </Link>
+                <Link 
+                  to="/admin/users" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                >
+                  <FaUserCog className="mr-2" /> Gestion Utilisateurs
+                </Link>
+              </div>
+            </div>
           )}
         </nav>
 
@@ -107,17 +129,39 @@ const Header = () => {
                       <FaBook className="mr-2" /> Ma liste de souhaits
                     </Link>
                     
-                    {/* Option Dashboard pour les administrateurs */}
+                    {/* Options administrateur */}
                     {isAdmin && (
-                      <Link 
-                        to="/admin/dashboard" 
-                        className="block px-4 py-2 text-sm text-primary hover:bg-gray-100 flex items-center"
-                        onClick={() => setShowDropdown(false)}
-                      >
-                        <FaTachometerAlt className="mr-2" /> Dashboard Admin
-                      </Link>
+                      <>
+                        <div className="border-t border-gray-100 my-1"></div>
+                        <div className="px-4 py-1 text-xs text-gray-500">Administration</div>
+                        
+                        <Link 
+                          to="/admin/dashboard" 
+                          className="block px-4 py-2 text-sm text-primary hover:bg-gray-100 flex items-center"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <FaChartLine className="mr-2" /> Tableau de Bord
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/orders" 
+                          className="block px-4 py-2 text-sm text-primary hover:bg-gray-100 flex items-center"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <FaShoppingBag className="mr-2" /> Gestion Commandes
+                        </Link>
+                        
+                        <Link 
+                          to="/admin/users" 
+                          className="block px-4 py-2 text-sm text-primary hover:bg-gray-100 flex items-center"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <FaUserCog className="mr-2" /> Gestion Utilisateurs
+                        </Link>
+                      </>
                     )}
                     
+                    <div className="border-t border-gray-100 my-1"></div>
                     <button 
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
@@ -172,7 +216,7 @@ const Header = () => {
           <Link to="/wishlist" className="text-white/80 py-1">Wishlist</Link>
           <Link to="/contact" className="text-white/80 py-1">Contact</Link>
           {isAdmin && (
-            <Link to="/admin/dashboard" className="text-white/80 py-1">Dashboard</Link>
+            <Link to="/admin/dashboard" className="text-white/80 py-1">Admin</Link>
           )}
         </div>
       </div>

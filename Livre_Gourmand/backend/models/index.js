@@ -33,6 +33,12 @@ Utilisateur.hasOne(Client, { foreignKey: 'id_utilisateur' });
 Commande.belongsTo(Client, { foreignKey: 'id_client' });
 Client.hasMany(Commande, { foreignKey: 'id_client' });
 
+// Vérifiez que ces associations sont présentes et correctes
+ItemCommande.belongsTo(Commande, { foreignKey: 'id_commande' });
+ItemCommande.belongsTo(Livre, { foreignKey: 'id_livre' });
+Commande.belongsToMany(Livre, { through: ItemCommande, foreignKey: 'id_commande' });
+Livre.belongsToMany(Commande, { through: ItemCommande, foreignKey: 'id_livre' });
+
 module.exports = {
   Utilisateur,
   Client,

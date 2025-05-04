@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaSpinner, FaClock, FaCheckCircle, FaTruck, FaBox, FaTimes, FaReceipt, FaBoxOpen } from 'react-icons/fa';
 import { orderService } from '../services/orderService';
 import { motion } from 'framer-motion';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const OrderDetailsPage = () => {
   const { id } = useParams();
@@ -11,6 +12,7 @@ const OrderDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,21 +34,21 @@ const OrderDetailsPage = () => {
     }
   }, [id]);
 
-  const handleCancelOrder = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) {
-      return;
-    }
+  const handleCancelOrder = () => {
+    setShowCancelConfirm(true);
+  };
 
+  const confirmCancelOrder = async () => {
     try {
       setCancelLoading(true);
       await orderService.cancelOrder(id);
       // Rafraîchir les données de la commande
       const updatedOrder = await orderService.getOrderById(id);
       setOrder(updatedOrder);
-      alert('Votre commande a été annulée avec succès.');
+      // Ici, vous pourriez afficher une notification de succès si vous avez implémenté le système de notifications
     } catch (err) {
       console.error('Erreur lors de l\'annulation de la commande:', err);
-      alert('Impossible d\'annuler la commande. ' + (err.response?.data?.message || 'Veuillez réessayer.'));
+      setError('Impossible d\'annuler la commande. ' + (err.response?.data?.message || 'Veuillez réessayer.'));
     } finally {
       setCancelLoading(false);
     }
@@ -233,72 +235,57 @@ const OrderDetailsPage = () => {
           </div>
 
           <h2 className="text-lg font-semibold text-primary mb-3">Articles commandés</h2>
-          <div className="bg-gray-50 rounded p-4 mb-6">
-            {order.Livres && order.Livres.length > 0 ? (
-              <div className="space-y-4">
-                {order.Livres.map((livre) => (
-                  <motion.div
-                    key={livre.id_livre}
-                    className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-white rounded-lg shadow-sm"
-                    whileHover={{ scale: 1.01 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <div className="w-16 h-20 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                      {livre.image_url ? (
-                        <img
-                          src={livre.image_url.startsWith('http') ? livre.image_url : `http://localhost:3001${livre.image_url}`}
-                          alt={livre.titre}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <FaBoxOpen size={20} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-grow">
-                      <Link to={`/book/${livre.id_livre}`} className="font-medium text-primary hover:underline">
-                        {livre.titre}
-                      </Link>
-                      <div className="text-sm text-gray-600">
-                        {livre.auteur}
-                      </div>
-                    </div>
-                    <div className="text-right sm:text-left">
-                      <div className="text-sm text-gray-500">
-                        Quantité: {livre.ItemCommande.quantite}
-                      </div>
-                      <div className="text-gray-700">
-                        {parseFloat(livre.ItemCommande.prix_unitaire).toFixed(2)} € / unité
-                      </div>
-                    </div>
-                    <div className="font-bold text-primary text-right whitespace-nowrap">
-                      {(parseFloat(livre.ItemCommande.prix_unitaire) * livre.ItemCommande.quantite).toFixed(2)} €
-                    </div>
-                  </motion.div>
-                ))}
-
-                <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-right">
-                    <div className="flex justify-between gap-8">
-                      <span className="text-gray-600">Sous-total:</span>
-                      <span>{parseFloat(order.montant_total).toFixed(2)} €</span>
-                    </div>
-                    <div className="flex justify-between gap-8">
-                      <span className="text-gray-600">Frais de livraison:</span>
-                      <span>5.00 €</span>
-                    </div>
-                    <div className="flex justify-between gap-8 font-bold text-lg mt-2 pt-2 border-t border-gray-200">
-                      <span>Total:</span>
-                      <span className="text-primary">{(parseFloat(order.montant_total) + 5).toFixed(2)} €</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+<div className="bg-gray-50 rounded p-4 mb-6">
+  {order.Livres && order.Livres.length > 0 ? (
+    <div className="space-y-4">
+      {order.Livres.map((livre) => (
+        <motion.div
+          key={livre.id_livre}
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-white rounded-lg shadow-sm"
+          whileHover={{ scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 300 }}
+        >
+          <div className="w-16 h-20 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+            {livre.image_url ? (
+              <img
+                src={livre.image_url.startsWith('http') ? livre.image_url : `http://localhost:3001${livre.image_url}`}
+                alt={livre.titre}
+                className="w-full h-full object-cover"
+              />
             ) : (
-              <p className="text-gray-500 italic text-center py-4">Aucun article disponible pour cette commande</p>
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <FaBoxOpen size={20} />
+              </div>
             )}
           </div>
+          <div className="flex-grow">
+            <Link to={`/book/${livre.id_livre}`} className="font-medium text-primary hover:underline">
+              {livre.titre}
+            </Link>
+            <div className="text-sm text-gray-600">
+              {livre.auteur}
+            </div>
+          </div>
+          <div className="text-right sm:text-left">
+            <div className="text-sm text-gray-500">
+              Quantité: {livre.ItemCommande?.quantite || 0}
+            </div>
+            <div className="text-gray-700">
+              {parseFloat(livre.ItemCommande?.prix_unitaire || 0).toFixed(2)} € / unité
+            </div>
+          </div>
+          <div className="font-bold text-primary text-right whitespace-nowrap">
+            {(parseFloat(livre.ItemCommande?.prix_unitaire || 0) * (livre.ItemCommande?.quantite || 0)).toFixed(2)} €
+          </div>
+        </motion.div>
+      ))}
+
+      {/* Sous-total, frais de livraison, etc. */}
+    </div>
+  ) : (
+    <p className="text-gray-500 italic text-center py-4">Aucun article disponible pour cette commande</p>
+  )}
+</div>
 
           <div className="flex justify-between items-center">
             <Link
@@ -320,6 +307,18 @@ const OrderDetailsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Ajouter le composant de confirmation */}
+      <ConfirmDialog
+        isOpen={showCancelConfirm}
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={confirmCancelOrder}
+        title="Annuler la commande"
+        message="Êtes-vous sûr de vouloir annuler cette commande ?"
+        confirmText="Oui, annuler"
+        cancelText="Non, garder"
+        type="danger"
+      />
     </div>
   );
 };

@@ -123,13 +123,46 @@ const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur lors de la création de la commande:', error);
-    // Si c'est une erreur de contrainte unique, renvoyer un message plus clair
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({
-        message: 'Une commande avec cet identifiant de transaction existe déjà',
-      });
+    
+    // Si c'est une erreur de contrainte unique sur transaction_id
+    if (error.name === 'SequelizeUniqueConstraintError' && 
+        error.errors && 
+        error.errors.length > 0 && 
+        error.errors[0].path === 'transaction_id') {
+      
+      const transaction_id = error.errors[0].value;
+      
+      // Récupérer la commande existante avec cette transaction_id
+      try {
+        const existingCommand = await Commande.findOne({
+          where: { transaction_id },
+          include: [
+            {
+              model: Livre,
+              through: {
+                model: ItemCommande,
+                attributes: ['quantite', 'prix_unitaire']
+              }
+            }
+          ]
+        });
+        
+        if (existingCommand) {
+          return res.status(200).json({
+            message: 'Cette transaction a déjà été traitée',
+            commande: existingCommand
+          });
+        }
+      } catch (innerError) {
+        console.error('Erreur lors de la récupération de la commande existante:', innerError);
+      }
     }
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+    
+    // Pour les autres erreurs, retourner un message d'erreur standard
+    return res.status(500).json({ 
+      message: 'Erreur serveur lors de la création de la commande', 
+      error: error.message 
+    });
   }
 };
 
@@ -172,6 +205,7 @@ const getOrderById = async (req, res) => {
     const commandeId = req.params.id;
     const clientId = req.user.id_client;
 
+    // Récupérer la commande de base
     const commande = await Commande.findOne({
       where: { id_commande: commandeId, id_client: clientId },
       include: [
@@ -192,13 +226,54 @@ const getOrderById = async (req, res) => {
       return res.status(404).json({ message: 'Commande non trouvée' });
     }
 
-    res.json(commande);
+    // Convertir en objet simple
+    const commandeObj = commande.toJSON();
+    
+    // Corriger les propriétés de casse pour correspondre aux attentes du frontend
+    // Si livres est défini mais Livres ne l'est pas
+    if (commandeObj.livres && !commandeObj.Livres) {
+      commandeObj.Livres = commandeObj.livres.map(livre => {
+        // Corriger aussi la propriété item_commande en ItemCommande
+        if (livre.item_commande) {
+          livre.ItemCommande = livre.item_commande;
+          delete livre.item_commande;
+        }
+        return livre;
+      });
+      
+      // Supprimer la propriété originale
+      delete commandeObj.livres;
+    } 
+    // Si aucun livre n'est trouvé, rechercher manuellement
+    else if (!commandeObj.Livres || commandeObj.Livres.length === 0) {
+      // Rechercher les items de commande
+      const items = await ItemCommande.findAll({
+        where: { id_commande: commandeId },
+        include: [{ model: Livre }]
+      });
+
+      // Initialiser le tableau des livres
+      commandeObj.Livres = [];
+
+      // Ajouter chaque livre trouvé
+      for (const item of items) {
+        if (item.Livre) {
+          const livre = item.Livre.toJSON();
+          livre.ItemCommande = {
+            quantite: item.quantite,
+            prix_unitaire: item.prix_unitaire
+          };
+          commandeObj.Livres.push(livre);
+        }
+      }
+    }
+
+    res.json(commandeObj);
   } catch (error) {
     console.error('Erreur lors de la récupération de la commande:', error);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 };
-
 // @desc    Annuler une commande
 // @route   PUT /api/front/orders/:id/cancel
 // @access  Private
@@ -231,22 +306,58 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    // Remettre les articles en stock
-    for (const livre of commande.Livres) {
-      const quantite = parseInt(livre.ItemCommande.quantite);
-      if (!isNaN(quantite) && quantite > 0) {
-        // Assurer que le nouveau stock est un nombre valide
-        const nouveauStock = livre.stock + quantite;
-        await livre.update({ stock: nouveauStock });
+    // Remettre les articles en stock - avec vérification que Livres existe et est itérable
+    if (commande.Livres && Array.isArray(commande.Livres)) {
+      for (const livre of commande.Livres) {
+        // Vérifier que l'objet ItemCommande existe et a une quantité
+        if (livre.ItemCommande && typeof livre.ItemCommande.quantite !== 'undefined') {
+          const quantite = parseInt(livre.ItemCommande.quantite);
+          if (!isNaN(quantite) && quantite > 0) {
+            // Assurer que le nouveau stock est un nombre valide
+            const nouveauStock = livre.stock + quantite;
+            await livre.update({ stock: nouveauStock });
+          }
+        }
+      }
+    } else {
+      console.log("Attention: commande.Livres n'est pas itérable ou n'existe pas");
+      // Récupérer les items de la commande directement depuis ItemCommande
+      const items = await ItemCommande.findAll({
+        where: { id_commande: commande.id_commande },
+        include: [{ model: Livre }]
+      });
+
+      // Mettre à jour le stock pour chaque item
+      for (const item of items) {
+        if (item.Livre) {
+          const quantite = parseInt(item.quantite);
+          if (!isNaN(quantite) && quantite > 0) {
+            const nouveauStock = item.Livre.stock + quantite;
+            await item.Livre.update({ stock: nouveauStock });
+          }
+        }
       }
     }
 
     // Mettre à jour le statut de la commande
     await commande.update({ statut: 'ANNULEE' });
 
+    // Récupérer la commande mise à jour avec tous ses livres pour la réponse
+    const commandeMiseAJour = await Commande.findByPk(commande.id_commande, {
+      include: [
+        {
+          model: Livre,
+          through: {
+            model: ItemCommande,
+            attributes: ['quantite', 'prix_unitaire']
+          }
+        }
+      ]
+    });
+
     res.json({
       message: 'Commande annulée avec succès',
-      commande
+      commande: commandeMiseAJour
     });
   } catch (error) {
     console.error('Erreur lors de l\'annulation de la commande:', error);

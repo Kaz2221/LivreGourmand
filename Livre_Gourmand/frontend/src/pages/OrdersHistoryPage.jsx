@@ -1,7 +1,9 @@
-// src/pages/OrdersHistoryPage.jsx
+// Dans OrdersHistoryPage.jsx
+// Ajouter un aperçu des articles de la commande
+
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { FaBoxOpen, FaSpinner, FaClock, FaCheckCircle, FaTruck, FaBox, FaTimes } from 'react-icons/fa';
+import { FaBoxOpen, FaSpinner, FaClock, FaCheckCircle, FaTruck, FaBox, FaTimes, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { orderService } from '../services/orderService';
 import { AuthContext } from '../context/AuthContext';
 import { motion } from 'framer-motion';
@@ -11,6 +13,8 @@ const OrdersHistoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { isAuthenticated } = useContext(AuthContext);
+  // Nouvel état pour suivre quelle commande est développée
+  const [expandedOrder, setExpandedOrder] = useState(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -44,21 +48,60 @@ const OrdersHistoryPage = () => {
     }).format(date);
   };
 
-  // Fonction qui retourne l'icône et la couleur en fonction du statut de la commande
+  // Fonction pour basculer l'état développé d'une commande
+  const toggleOrderExpand = (orderId) => {
+    if (expandedOrder === orderId) {
+      setExpandedOrder(null); // Réduire si déjà développé
+    } else {
+      setExpandedOrder(orderId); // Développer si réduit
+    }
+  };
+
+  // Fonction qui retourne l'icône, la couleur et les informations du statut
   const getStatusInfo = (status) => {
     switch (status) {
       case 'EN_ATTENTE':
-        return { icon: <FaClock />, color: 'text-yellow-500', label: 'En attente' };
+        return { 
+          icon: <FaClock />, 
+          color: 'text-yellow-500', 
+          bgColor: 'bg-yellow-100',
+          label: 'En attente'
+        };
       case 'VALIDEE':
-        return { icon: <FaCheckCircle />, color: 'text-green-500', label: 'Validée' };
+        return { 
+          icon: <FaCheckCircle />, 
+          color: 'text-green-500',
+          bgColor: 'bg-green-100',
+          label: 'Validée'
+        };
       case 'EN_COURS_DE_LIVRAISON':
-        return { icon: <FaTruck />, color: 'text-blue-500', label: 'En livraison' };
+        return { 
+          icon: <FaTruck />, 
+          color: 'text-blue-500',
+          bgColor: 'bg-blue-100',
+          label: 'En livraison'
+        };
       case 'LIVREE':
-        return { icon: <FaBox />, color: 'text-green-700', label: 'Livrée' };
+        return { 
+          icon: <FaBox />, 
+          color: 'text-green-700',
+          bgColor: 'bg-green-100',
+          label: 'Livrée'
+        };
       case 'ANNULEE':
-        return { icon: <FaTimes />, color: 'text-red-500', label: 'Annulée' };
+        return { 
+          icon: <FaTimes />, 
+          color: 'text-red-500',
+          bgColor: 'bg-red-100',
+          label: 'Annulée'
+        };
       default:
-        return { icon: <FaClock />, color: 'text-gray-500', label: status };
+        return { 
+          icon: <FaClock />, 
+          color: 'text-gray-500',
+          bgColor: 'bg-gray-100',
+          label: status
+        };
     }
   };
 
@@ -90,86 +133,90 @@ const OrdersHistoryPage = () => {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-6">
-          {orders.map((order, index) => {
+        <div className="space-y-4">
+          {orders.map((order) => {
             const statusInfo = getStatusInfo(order.statut);
+            const isExpanded = expandedOrder === order.id_commande;
+            
             return (
               <motion.div
                 key={order.id_commande}
                 className="bg-white rounded-lg shadow-md overflow-hidden"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
+                transition={{ duration: 0.3 }}
               >
-                <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-b">
+                <div 
+                  className="p-4 flex justify-between items-center cursor-pointer"
+                  onClick={() => toggleOrderExpand(order.id_commande)}
+                >
                   <div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-semibold">
                       Commande #{order.id_commande} - {formatDate(order.date_commande)}
                     </div>
-                    <div className={`flex items-center font-medium ${statusInfo.color}`}>
+                    <div className={`flex items-center mt-1 ${statusInfo.color}`}>
                       {statusInfo.icon}
                       <span className="ml-2">{statusInfo.label}</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-primary">
-                      {parseFloat(order.montant_total).toFixed(2)} €
+                  <div className="flex items-center">
+                    <div className="text-right mr-4">
+                      <div className="font-bold text-primary">
+                        {parseFloat(order.montant_total).toFixed(2)} €
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {order.Livres ? order.Livres.length : 0} article(s)
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      {order.Livres ? order.Livres.length : 0} article(s)
-                    </div>
+                    {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                   </div>
                 </div>
-
-                <div className="px-6 py-4">
-                  {order.Livres && order.Livres.length > 0 ? (
-                    <div className="space-y-4">
-                      {order.Livres.map((livre) => (
-                        <div key={livre.id_livre} className="flex items-center gap-4">
-                          <div className="w-16 h-20 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                            {livre.image_url ? (
-                              <img
-                                src={livre.image_url.startsWith('http') ? livre.image_url : `http://localhost:3001${livre.image_url}`}
-                                alt={livre.titre}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                <FaBoxOpen size={20} />
+                
+                {/* Articles de la commande - Visible uniquement si développé */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 border-t pt-3">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Articles commandés</h3>
+                    
+                    {order.Livres && order.Livres.length > 0 ? (
+                      <div className="space-y-2">
+                        {order.Livres.map((livre) => (
+                          <div key={livre.id_livre} className="flex justify-between items-center py-1 border-b border-gray-100">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 w-8 h-10 bg-gray-100 rounded overflow-hidden mr-2">
+                                {livre.image_url ? (
+                                  <img
+                                    src={livre.image_url.startsWith('http') ? livre.image_url : `http://localhost:3001${livre.image_url}`}
+                                    alt={livre.titre}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                    <FaBoxOpen size={14} />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          <div className="flex-grow">
-                            <Link to={`/book/${livre.id_livre}`} className="font-medium text-primary hover:underline">
-                              {livre.titre}
-                            </Link>
-                            <div className="text-sm text-gray-500">
-                              {livre.auteur}
+                              <span className="text-sm">{livre.titre}</span>
                             </div>
-                            <div className="text-sm">
-                              <span className="text-gray-500">Quantité: </span>
-                              <span>{livre.ItemCommande.quantite}</span>
-                              <span className="mx-2">•</span>
-                              <span className="text-gray-500">Prix unitaire: </span>
-                              <span>{parseFloat(livre.ItemCommande.prix_unitaire).toFixed(2)} €</span>
+                            <div className="text-sm text-gray-600">
+                              {livre.ItemCommande?.quantite || 1} x {parseFloat(livre.ItemCommande?.prix_unitaire || livre.prix).toFixed(2)} €
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">Aucun détail disponible</p>
+                    )}
+                    
+                    <div className="mt-3 text-right">
+                      <Link 
+                        to={`/my-orders/${order.id_commande}`} 
+                        className="text-primary hover:underline text-sm"
+                      >
+                        Voir les détails complets
+                      </Link>
                     </div>
-                  ) : (
-                    <p className="text-gray-500 italic">Aucun détail disponible</p>
-                  )}
-                </div>
-
-                <div className="bg-gray-50 px-6 py-3 border-t flex justify-end">
-                  <Link 
-                    to={`/my-orders/${order.id_commande}`} 
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Voir les détails
-                  </Link>
-                </div>
+                  </div>
+                )}
               </motion.div>
             );
           })}

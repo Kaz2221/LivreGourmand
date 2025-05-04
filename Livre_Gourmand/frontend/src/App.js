@@ -15,8 +15,13 @@ import WishlistPage from './pages/WishlistPage';
 import ShopPage from './pages/ShopPage';
 import SuccessPage from './pages/SuccessPage';
 import CancelPage from './pages/CancelPage';
-// Import du dashboard administrateur
+import OrdersHistoryPage from './pages/OrdersHistoryPage';
+import OrderDetailsPage from './pages/OrderDetailsPage';
+
+// Import du dashboard administrateur et de la page de gestion des commandes
 import DashboardPage from './pages/admin/DashboardPage';
+import OrdersManagementPage from './pages/admin/OrdersManagementPage';
+
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import PrivateRoute from './components/PrivateRoute';
@@ -74,6 +79,22 @@ function App() {
                   </PrivateRoute>
                 } 
               />
+              <Route 
+                path="/my-orders" 
+                element={
+                  <PrivateRoute>
+                    <OrdersHistoryPage />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/my-orders/:id" 
+                element={
+                  <PrivateRoute>
+                    <OrderDetailsPage />
+                  </PrivateRoute>
+                } 
+              />
 
               {/* Routes protégées pour administrateurs */}
               <Route 
@@ -81,6 +102,14 @@ function App() {
                 element={
                   <AdminRoute>
                     <DashboardPage />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/orders" 
+                element={
+                  <AdminRoute>
+                    <OrdersManagementPage />
                   </AdminRoute>
                 } 
               />

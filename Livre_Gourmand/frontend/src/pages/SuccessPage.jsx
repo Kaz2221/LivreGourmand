@@ -1,4 +1,3 @@
-// frontend/src/pages/SuccessPage.jsx
 import React, { useEffect, useState, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaCheckCircle, FaSpinner } from 'react-icons/fa';
@@ -95,7 +94,21 @@ const SuccessPage = () => {
         localStorage.removeItem('pendingOrderItems');
       } catch (err) {
         console.error('Erreur lors de la création de la commande:', err);
-        setError(err.message || 'Une erreur est survenue lors de la création de votre commande');
+        
+        // Si l'erreur contient un message indiquant que la transaction existe déjà
+        if (err.response?.data?.commande) {
+          // La commande existe déjà, utiliser ses informations
+          const existingOrderId = err.response.data.commande.id_commande;
+          localStorage.setItem(`order_for_transaction_${transactionId}`, existingOrderId.toString());
+          setOrderId(existingOrderId);
+          
+          // Nettoyer quand même le panier
+          await clearCart();
+          localStorage.removeItem('pendingOrderItems');
+        } else {
+          // Pour les autres erreurs
+          setError(err.message || 'Une erreur est survenue lors de la création de votre commande');
+        }
       } finally {
         setLoading(false);
       }
